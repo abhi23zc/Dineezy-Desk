@@ -1,18 +1,14 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '../components/theme-toggle';
 import { superbase } from '../../utils/supabase_client';
-
-// ── Demo workspace data (replace with DB fetch later) ──────────────────────
-const DEMO_WORKSPACES = [
-  { id: 'ws-1', name: 'Flowbase HQ',    emoji: '🏢', plan: 'Pro',  members: 12 },
-  { id: 'ws-2', name: 'Side Projects',  emoji: '🚀', plan: 'Free', members: 3  },
-  { id: 'ws-3', name: 'Client: Dineezy',emoji: '🍕', plan: 'Pro',  members: 7  },
-  { id: 'ws-4', name: 'Personal',       emoji: '👤', plan: 'Free', members: 1  },
-];
-
+import { CreateWorkspaceModal, type Workspace } from '../components/create-workspace-modal';
+import { CreateProjectModal } from '../components/create-project-modal';
+import { ProjectView } from '../components/project-view';
+import { useWorkspaces, type WorkspaceItem } from '../hooks/useWorkspaces';
+import { useProjects, type ProjectItem } from '../hooks/useProjects';
 const icons = {
   dashboard: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></svg>,
   checkbox: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>,
@@ -25,16 +21,46 @@ const icons = {
   module: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2" /><rect x="4" y="9" width="16" height="6" /><line x1="10" y1="4" x2="10" y2="20" /></svg>,
   logo: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M9 12l2 2 4-4" /></svg>,
   signout: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>,
-  grid: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+  grid: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>,
 };
 
 export default function Dashboard() {
   const router = useRouter();
 
-  // ── Workspace switcher state ─────────────────────────────────────────────
-  const [activeWorkspace, setActiveWorkspace] = useState(DEMO_WORKSPACES[0]);
+  // ── Workspace data (real DB fetch) ────────────────────────────────────────────
+  const {
+    workspaces,
+    activeWorkspace,
+    setActiveWorkspace,
+    addWorkspace,
+    loading: wsLoading,
+    error: wsError,
+    refetch: refetchWorkspaces,
+  } = useWorkspaces();
+
+  // ── Active view: dashboard overview OR a specific project ────────────────────
+  type ActiveView = { type: 'dashboard' } | { type: 'project'; project: ProjectItem };
+  const [activeView, setActiveView] = useState<ActiveView>({ type: 'dashboard' });
+
+  // Reset to dashboard overview whenever the workspace changes
+  const handleSetActiveWorkspace = useCallback((ws: WorkspaceItem) => {
+    setActiveWorkspace(ws);
+    setActiveView({ type: 'dashboard' });
+  }, [setActiveWorkspace]);
+
+  // ── Workspace dropdown state ────────────────────────────────────────────
   const [wsOpen, setWsOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const wsRef = useRef<HTMLDivElement>(null);
+
+  // ── Projects for the active workspace ─────────────────────────────────
+  const {
+    projects,
+    loading: projLoading,
+    error: projError,
+    addProject,
+  } = useProjects(activeWorkspace?.id);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -51,9 +77,7 @@ export default function Dashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await superbase.auth.getSession();
-      if (!session) {
-        router.replace('/login');
-      }
+      if (!session) router.replace('/login');
     };
     checkAuth();
   }, [router]);
@@ -62,6 +86,28 @@ export default function Dashboard() {
     await superbase.auth.signOut();
     router.replace('/login');
   };
+
+  // ── Workspace created ────────────────────────────────────────────────────────
+  const handleWorkspaceCreated = useCallback((ws: Workspace) => {
+    const item: WorkspaceItem = {
+      id: ws.id,
+      name: ws.name,
+      slug: ws.slug,
+      emoji: ws.emoji,
+      description: ws.description,
+      created_at: ws.created_at,
+      member_count: 1,
+    };
+    addWorkspace(item);
+    setCreateModalOpen(false);
+    setWsOpen(false);
+  }, [addWorkspace]);
+
+  // ── Project created ────────────────────────────────────────────────────────
+  const handleProjectCreated = useCallback((project: ProjectItem) => {
+    addProject(project);
+    setCreateProjectOpen(false);
+  }, [addProject]);
 
   return (
     <div className="flex h-screen w-full bg-[#FAFAFA] dark:bg-[#000000] font-sans text-[#09090B] dark:text-[#FAFAFA] transition-colors duration-150">
@@ -72,7 +118,7 @@ export default function Dashboard() {
           <div className="w-[24px] h-[24px] rounded-[6px] bg-[#09090B] dark:bg-[#FAFAFA] flex items-center justify-center">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="stroke-white dark:stroke-[#09090B]" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M9 12l2 2 4-4" /></svg>
           </div>
-          <span className="text-[14px] font-medium text-[#09090B] dark:text-[#FAFAFA]">Flowbase</span>
+          <span className="text-[14px] font-medium text-[#09090B] dark:text-[#FAFAFA]">Dineezy Desk</span>
         </div>
 
         {/* Navigation */}
@@ -102,25 +148,65 @@ export default function Dashboard() {
 
           {/* Projects Section */}
           <div className="flex flex-col">
-            <h3 className="text-[11px] font-medium text-[#A1A1AA] uppercase tracking-wider mb-[8px] pl-[8px]">Projects</h3>
+            <div className="flex items-center justify-between mb-[8px] pl-[8px] pr-[4px]">
+              <h3 className="text-[11px] font-medium text-[#A1A1AA] uppercase tracking-wider">Projects</h3>
+              {!wsLoading && activeWorkspace && (
+                <span className="text-[11px] text-[#A1A1AA] bg-[#F4F4F5] dark:bg-[#18181B] px-[5px] py-[1px] rounded-[3px]">
+                  {projects.length}
+                </span>
+              )}
+            </div>
             <div className="flex flex-col gap-[2px]">
-              <a href="#" className="flex items-center gap-[10px] h-[36px] px-[8px] rounded-[6px] text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors duration-100">
-                <span className="w-[6px] h-[6px] rounded-full bg-[#09090B] dark:bg-[#FAFAFA]"></span>
-                <span className="text-[13px]">Website Redesign</span>
-              </a>
-              <a href="#" className="flex items-center gap-[10px] h-[36px] px-[8px] rounded-[6px] text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors duration-100">
-                <span className="w-[6px] h-[6px] rounded-full bg-[#065F46] dark:bg-[#34D399]"></span>
-                <span className="text-[13px]">Mobile App v2</span>
-              </a>
-              <a href="#" className="flex items-center gap-[10px] h-[36px] px-[8px] rounded-[6px] text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors duration-100">
-                <span className="w-[6px] h-[6px] rounded-full bg-[#991B1B] dark:bg-[#F87171]"></span>
-                <span className="text-[13px]">API Integration</span>
-              </a>
-              <a href="#" className="flex items-center gap-[10px] h-[36px] px-[8px] rounded-[6px] text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors duration-100 mt-[4px]">
-                <span className="text-[13px]">{icons.plus} New project</span>
-              </a>
+              {/* Loading skeletons */}
+              {projLoading && [1, 2].map(i => (
+                <div key={i} className="flex items-center gap-[8px] h-[36px] px-[8px] animate-pulse">
+                  <div className="w-[14px] h-[14px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A] shrink-0" />
+                  <div className="flex-1 h-[10px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+                </div>
+              ))}
+              {/* Error */}
+              {!projLoading && projError && (
+                <p className="text-[11px] text-[#991B1B] dark:text-[#F87171] px-[8px] py-[4px]">
+                  Failed to load projects.
+                </p>
+              )}
+              {/* Empty state */}
+              {!projLoading && !projError && activeWorkspace && projects.length === 0 && (
+                <p className="text-[11px] text-[#A1A1AA] px-[8px] py-[4px] italic">No projects yet.</p>
+              )}
+              {/* Project list */}
+              {!projLoading && !projError && projects.map(project => (
+                <button
+                  key={project.id}
+                  onClick={() => setActiveView({ type: 'project', project })}
+                  className={`w-full flex items-center gap-[8px] h-[36px] px-[8px] rounded-[6px] text-left transition-colors duration-100 group ${
+                    activeView.type === 'project' && activeView.project.id === project.id
+                      ? 'bg-[#F4F4F5] dark:bg-[#18181B] text-[#09090B] dark:text-[#FAFAFA]'
+                      : 'text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA]'
+                  }`}
+                >
+                  <span className="text-[14px] leading-none shrink-0">{project.emoji}</span>
+                  <span className="text-[13px] truncate flex-1">{project.name}</span>
+                  {project.color && (
+                    <span
+                      className="w-[6px] h-[6px] rounded-full shrink-0 opacity-60 group-hover:opacity-100"
+                      style={{ backgroundColor: project.color }}
+                    />
+                  )}
+                </button>
+              ))}
+              {/* New project button */}
+              <button
+                onClick={() => activeWorkspace && setCreateProjectOpen(true)}
+                disabled={!activeWorkspace}
+                className="flex items-center gap-[8px] h-[32px] px-[8px] rounded-[6px] text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors duration-100 mt-[2px] disabled:opacity-40 disabled:cursor-not-allowed w-full text-left"
+              >
+                <span>{icons.plus}</span>
+                <span className="text-[13px]">New project</span>
+              </button>
             </div>
           </div>
+
         </div>
       </aside>
 
@@ -128,22 +214,42 @@ export default function Dashboard() {
       <div className="flex flex-col flex-1 min-w-0">
         {/* Topbar */}
         <header className="h-[56px] border-b border-[#E4E4E7] dark:border-[#27272A] bg-[#FFFFFF] dark:bg-[#09090B] flex items-center justify-between px-[24px] shrink-0 transition-colors duration-150 z-20 overflow-visible">
-          {/* Workspace Switcher */}
-          <div ref={wsRef} className="relative flex items-center gap-[4px] text-[13px]">
-            {/* Trigger button */}
-            <button
-              id="workspace-switcher-btn"
-              onClick={() => setWsOpen(v => !v)}
-              className="flex items-center gap-[8px] h-[32px] px-[10px] rounded-[6px] text-[#09090B] dark:text-[#FAFAFA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 select-none"
-            >
-              <span className="text-[16px] leading-none">{activeWorkspace.emoji}</span>
-              <span className="font-medium text-[13px]">{activeWorkspace.name}</span>
-              <span className={`transition-transform duration-200 ${wsOpen ? 'rotate-180' : 'rotate-0'}`}>
-                {icons.chevronDown}
-              </span>
-            </button>
+          {/* Left: workspace switcher + breadcrumb */}
+          <div className="flex items-center gap-[8px] text-[13px] min-w-0">
+            {/* Workspace Switcher */}
+            <div ref={wsRef} className="relative flex items-center text-[13px]">
 
-            {/* Dropdown */}
+            {/* ── Trigger button ── */}
+            {wsLoading ? (
+              // Skeleton while loading
+              <div className="flex items-center gap-[8px] h-[32px] px-[10px] rounded-[6px] animate-pulse">
+                <div className="w-[18px] h-[18px] rounded-[4px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+                <div className="w-[90px] h-[12px] rounded-[4px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+              </div>
+            ) : (
+              <button
+                id="workspace-switcher-btn"
+                onClick={() => setWsOpen(v => !v)}
+                className="flex items-center gap-[8px] h-[32px] px-[10px] rounded-[6px] text-[#09090B] dark:text-[#FAFAFA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 select-none"
+              >
+                {activeWorkspace ? (
+                  <>
+                    <span className="text-[16px] leading-none">{activeWorkspace.emoji}</span>
+                    <span className="font-medium text-[13px] max-w-[140px] truncate">{activeWorkspace.name}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[16px] leading-none">🏢</span>
+                    <span className="font-medium text-[13px] text-[#A1A1AA]">Select workspace</span>
+                  </>
+                )}
+                <span className={`transition-transform duration-200 ${wsOpen ? 'rotate-180' : 'rotate-0'}`}>
+                  {icons.chevronDown}
+                </span>
+              </button>
+            )}
+
+            {/* ── Dropdown ── */}
             {wsOpen && (
               <div
                 id="workspace-dropdown"
@@ -154,55 +260,121 @@ export default function Dashboard() {
                   <p className="text-[11px] font-medium text-[#A1A1AA] uppercase tracking-wider">Workspaces</p>
                 </div>
 
-                {/* Workspace list */}
-                <div className="py-[6px]">
-                  {DEMO_WORKSPACES.map(ws => (
-                    <button
-                      key={ws.id}
-                      onClick={() => { setActiveWorkspace(ws); setWsOpen(false); }}
-                      className={`w-full flex items-center gap-[10px] px-[12px] h-[42px] text-left hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 group ${
-                        ws.id === activeWorkspace.id ? 'bg-[#F4F4F5] dark:bg-[#18181B]' : ''
-                      }`}
-                    >
-                      {/* Emoji avatar */}
-                      <span className="w-[28px] h-[28px] rounded-[6px] bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center text-[14px] shrink-0 border border-[#E4E4E7] dark:border-[#27272A]">
-                        {ws.emoji}
-                      </span>
-
-                      {/* Info */}
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <span className="text-[13px] font-medium text-[#09090B] dark:text-[#FAFAFA] truncate">{ws.name}</span>
-                        <span className="text-[11px] text-[#A1A1AA]">{ws.members} member{ws.members !== 1 ? 's' : ''} · {ws.plan}</span>
+                {/* ── Loading skeletons ── */}
+                {wsLoading && (
+                  <div className="py-[6px] flex flex-col gap-[2px]">
+                    {[1, 2].map(i => (
+                      <div key={i} className="flex items-center gap-[10px] px-[12px] h-[42px] animate-pulse">
+                        <div className="w-[28px] h-[28px] rounded-[6px] bg-[#E4E4E7] dark:bg-[#27272A] shrink-0" />
+                        <div className="flex flex-col gap-[4px] flex-1">
+                          <div className="w-[100px] h-[10px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+                          <div className="w-[60px] h-[8px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                )}
 
-                      {/* Active check */}
-                      {ws.id === activeWorkspace.id && (
-                        <span className="text-[#09090B] dark:text-[#FAFAFA] shrink-0">{icons.check}</span>
-                      )}
+                {/* ── Fetch error + retry ── */}
+                {!wsLoading && wsError && (
+                  <div className="px-[12px] py-[14px] flex items-start gap-[8px]">
+                    <svg className="shrink-0 mt-[1px] text-[#991B1B] dark:text-[#F87171]" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <div className="flex flex-col gap-[6px]">
+                      <p className="text-[12px] text-[#52525B] dark:text-[#A1A1AA]">Failed to load workspaces.</p>
+                      <button
+                        onClick={refetchWorkspaces}
+                        className="text-[12px] font-medium text-[#09090B] dark:text-[#FAFAFA] underline underline-offset-2 text-left"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Empty state ── */}
+                {!wsLoading && !wsError && workspaces.length === 0 && (
+                  <div className="px-[12px] py-[20px] flex flex-col items-center gap-[10px] text-center">
+                    <div className="w-[36px] h-[36px] rounded-[8px] bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center text-[18px]">
+                      🏢
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-medium text-[#09090B] dark:text-[#FAFAFA]">No workspaces yet</p>
+                      <p className="text-[11px] text-[#A1A1AA] mt-[2px]">Create one to get started</p>
+                    </div>
+                    <button
+                      onClick={() => { setWsOpen(false); setCreateModalOpen(true); }}
+                      className="h-[30px] px-[14px] rounded-[6px] bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] text-[12px] font-medium hover:opacity-90 transition-opacity duration-100"
+                    >
+                      Create Workspace
                     </button>
-                  ))}
-                </div>
+                  </div>
+                )}
 
-                {/* Divider */}
-                <div className="border-t border-[#E4E4E7] dark:border-[#27272A]" />
+                {/* ── Workspace list ── */}
+                {!wsLoading && !wsError && workspaces.length > 0 && (
+                  <div className="py-[6px]">
+                    {workspaces.map(ws => (
+                      <button
+                        key={ws.id}
+                        onClick={() => { handleSetActiveWorkspace(ws); setWsOpen(false); }}
+                        className={`w-full flex items-center gap-[10px] px-[12px] h-[42px] text-left hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 ${activeWorkspace?.id === ws.id ? 'bg-[#F4F4F5] dark:bg-[#18181B]' : ''}`}
+                      >
+                        <span className="w-[28px] h-[28px] rounded-[6px] bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center text-[14px] shrink-0 border border-[#E4E4E7] dark:border-[#27272A]">
+                          {ws.emoji}
+                        </span>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="text-[13px] font-medium text-[#09090B] dark:text-[#FAFAFA] truncate">{ws.name}</span>
+                          <span className="text-[11px] text-[#A1A1AA] truncate">
+                            {ws.member_count} member{ws.member_count !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        {activeWorkspace?.id === ws.id && (
+                          <span className="text-[#09090B] dark:text-[#FAFAFA] shrink-0">{icons.check}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-                {/* Create workspace */}
-                <div className="py-[6px]">
-                  <button
-                    id="create-workspace-btn"
-                    className="w-full flex items-center gap-[10px] px-[12px] h-[38px] text-left hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100"
-                    onClick={() => { setWsOpen(false); /* TODO: open create modal */ }}
-                  >
-                    <span className="w-[28px] h-[28px] rounded-[6px] border border-dashed border-[#A1A1AA] dark:border-[#52525B] flex items-center justify-center shrink-0">
-                      {icons.plus}
-                    </span>
-                    <span className="text-[13px] font-medium text-[#52525B] dark:text-[#A1A1AA]">Create Workspace</span>
-                  </button>
-                </div>
+                {/* ── Divider + Create button (always shown unless loading) ── */}
+                {!wsLoading && workspaces.length > 0 && (
+                  <>
+                    <div className="border-t border-[#E4E4E7] dark:border-[#27272A]" />
+                    <div className="py-[6px]">
+                      <button
+                        id="create-workspace-btn"
+                        className="w-full flex items-center gap-[10px] px-[12px] h-[38px] text-left hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100"
+                        onClick={() => { setWsOpen(false); setCreateModalOpen(true); }}
+                      >
+                        <span className="w-[28px] h-[28px] rounded-[6px] border border-dashed border-[#A1A1AA] dark:border-[#52525B] flex items-center justify-center shrink-0">
+                          {icons.plus}
+                        </span>
+                        <span className="text-[13px] font-medium text-[#52525B] dark:text-[#A1A1AA]">Create Workspace</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
+            </div>
+
+            {/* Breadcrumb: only shown when a project is active */}
+            {activeView.type === 'project' && (
+              <>
+                <span className="text-[#D4D4D8] dark:text-[#3F3F46]">/</span>
+                <button
+                  onClick={() => setActiveView({ type: 'dashboard' })}
+                  className="flex items-center gap-[6px] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors duration-100 max-w-[180px] truncate"
+                >
+                  <span className="text-[15px] leading-none shrink-0">{activeView.project.emoji}</span>
+                  <span className="text-[13px] font-medium truncate">{activeView.project.name}</span>
+                </button>
+              </>
+            )}
           </div>
-          
+
           {/* Actions */}
           <div className="flex items-center gap-[8px]">
             <ThemeToggle />
@@ -226,8 +398,11 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto p-[32px] transition-colors duration-150">
+        {/* Scrollable Content — switches between dashboard overview and project view */}
+        {activeView.type === 'project' ? (
+          <ProjectView project={activeView.project} />
+        ) : (
+          <main className="flex-1 overflow-y-auto p-[32px] transition-colors duration-150">
           {/* Dashboard Header */}
           <div className="mb-[32px]">
             <h1 className="text-[20px] font-semibold text-[#09090B] dark:text-[#FAFAFA] mb-[8px]">Website Redesign</h1>
@@ -289,7 +464,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             {/* Task Rows */}
             <div className="flex flex-col">
               {/* Task 1 */}
@@ -352,7 +527,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             {/* Task Rows */}
             <div className="flex flex-col">
               {/* Task 1 */}
@@ -374,6 +549,7 @@ export default function Dashboard() {
           </div>
 
         </main>
+        )}
       </div>
 
       {/* Context Panel */}
@@ -381,7 +557,7 @@ export default function Dashboard() {
         {/* Team Members Section */}
         <div className="mb-[32px]">
           <h3 className="text-[11px] font-medium text-[#A1A1AA] uppercase tracking-wider mb-[16px]">Team members</h3>
-          
+
           <div className="flex flex-col gap-[12px]">
             {/* Member 1 */}
             <div className="flex items-center gap-[10px]">
@@ -441,6 +617,26 @@ export default function Dashboard() {
         </button>
 
       </aside>
+
+      {/* Create Workspace Modal */}
+      <CreateWorkspaceModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onCreated={handleWorkspaceCreated}
+      />
+
+      {/* Create Project Modal */}
+      {activeWorkspace && (
+        <CreateProjectModal
+          isOpen={createProjectOpen}
+          workspaceId={activeWorkspace.id}
+          onClose={() => setCreateProjectOpen(false)}
+          onCreated={handleProjectCreated}
+        />
+      )}
     </div>
+
+
+
   );
 }
