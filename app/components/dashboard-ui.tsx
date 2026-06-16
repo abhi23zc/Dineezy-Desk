@@ -511,11 +511,48 @@ export function InlineTaskInput({ onSubmit, onCancel }: InlineTaskInputProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={handleTitleKey}
-          placeholder="Task name… (Enter for description, Esc to cancel)"
+          placeholder="Task name…"
           disabled={submitting || phase === "description"}
           className="flex-1 text-[13px] text-[#09090B] dark:text-[#FAFAFA] bg-transparent outline-none placeholder-[#A1A1AA] disabled:opacity-60"
         />
       </div>
+
+      {phase === "title" && (
+        <div className="flex items-center gap-[8px] px-[16px] pb-[12px] ml-[28px]">
+          <button
+            onClick={async () => {
+              if (title.trim()) {
+                setSubmitting(true);
+                await onSubmit(title.trim(), "");
+                setSubmitting(false);
+              }
+            }}
+            disabled={submitting || !title.trim()}
+            className="h-[28px] px-[12px] rounded-[6px] bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] text-[12px] font-medium hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+          >
+            Save task
+          </button>
+          <button
+            onClick={() => {
+              if (title.trim()) {
+                setPhase("description");
+              }
+            }}
+            disabled={submitting || !title.trim()}
+            className="h-[28px] px-[12px] rounded-[6px] border border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-[#FAFAFA] text-[12px] font-medium hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] disabled:opacity-50 cursor-pointer"
+          >
+            Add description
+          </button>
+          <button
+            onClick={onCancel}
+            disabled={submitting}
+            className="h-[28px] px-[10px] text-[12px] text-[#A1A1AA] hover:text-[#09090B] dark:hover:text-[#FAFAFA] disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       {/* Description row — shown after Enter on title */}
       {phase === "description" && (
         <div className="px-[16px] sm:px-[44px] pb-[12px] flex flex-col gap-[6px]">
@@ -524,7 +561,7 @@ export function InlineTaskInput({ onSubmit, onCancel }: InlineTaskInputProps) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onKeyDown={handleDescKey}
-            placeholder="Description (optional) — Enter to save, Esc to skip back"
+            placeholder="Description (optional)"
             rows={2}
             disabled={submitting}
             className="w-full text-[13px] text-[#09090B] dark:text-[#FAFAFA] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[6px] px-[10px] py-[8px] outline-none focus:border-[#09090B] dark:focus:border-[#FAFAFA] resize-none leading-relaxed placeholder-[#A1A1AA] disabled:opacity-60"
@@ -533,11 +570,24 @@ export function InlineTaskInput({ onSubmit, onCancel }: InlineTaskInputProps) {
             <button
               onClick={async () => { setSubmitting(true); await onSubmit(title.trim(), description.trim()); setSubmitting(false); }}
               disabled={submitting}
-              className="h-[28px] px-[12px] rounded-[6px] bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] text-[12px] font-medium hover:opacity-90 disabled:opacity-50"
+              className="h-[28px] px-[12px] rounded-[6px] bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] text-[12px] font-medium hover:opacity-90 disabled:opacity-50 cursor-pointer"
             >
               {submitting ? "Saving…" : "Save task"}
             </button>
-            <button onClick={onCancel} className="h-[28px] px-[10px] text-[12px] text-[#A1A1AA] hover:text-[#09090B] dark:hover:text-[#FAFAFA]">
+            <button
+              onClick={() => {
+                setPhase("title");
+              }}
+              disabled={submitting}
+              className="h-[28px] px-[10px] text-[12px] text-[#A1A1AA] hover:text-[#09090B] dark:hover:text-[#FAFAFA] disabled:opacity-50 cursor-pointer"
+            >
+              Back
+            </button>
+            <button
+              onClick={onCancel}
+              disabled={submitting}
+              className="h-[28px] px-[10px] text-[12px] text-[#A1A1AA] hover:text-[#991B1B] dark:hover:text-[#F87171] disabled:opacity-50 cursor-pointer"
+            >
               Cancel
             </button>
           </div>
@@ -570,18 +620,44 @@ export function InlineModuleInput({ onSubmit, onCancel }: InlineModuleInputProps
     } else if (e.key === "Escape") onCancel();
   };
 
+  const handleSave = async () => {
+    if (value.trim()) {
+      setSubmitting(true);
+      await onSubmit(value.trim());
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div className="flex items-center gap-[10px] px-[16px] h-[44px] border border-dashed border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] bg-[#FAFAFA] dark:bg-[#09090B] mb-[16px]">
-      <span className="text-[#A1A1AA]">{Icon.module}</span>
-      <input
-        ref={inputRef}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Module name… (Enter to save, Esc to cancel)"
-        disabled={submitting}
-        className="flex-1 text-[13px] text-[#09090B] dark:text-[#FAFAFA] bg-transparent outline-none placeholder-[#A1A1AA] disabled:opacity-60"
-      />
+    <div className="flex flex-col gap-[10px] p-[16px] border border-dashed border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] bg-[#FAFAFA] dark:bg-[#09090B] mb-[16px]">
+      <div className="flex items-center gap-[10px]">
+        <span className="text-[#A1A1AA]">{Icon.module}</span>
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Module name…"
+          disabled={submitting}
+          className="flex-1 text-[13px] text-[#09090B] dark:text-[#FAFAFA] bg-transparent outline-none placeholder-[#A1A1AA] disabled:opacity-60"
+        />
+      </div>
+      <div className="flex items-center gap-[8px] ml-[24px]">
+        <button
+          onClick={handleSave}
+          disabled={submitting || !value.trim()}
+          className="h-[28px] px-[12px] rounded-[6px] bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] text-[12px] font-medium hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+        >
+          {submitting ? "Saving…" : "Save module"}
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={submitting}
+          className="h-[28px] px-[10px] text-[12px] text-[#A1A1AA] hover:text-[#09090B] dark:hover:text-[#FAFAFA] disabled:opacity-50 cursor-pointer"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }

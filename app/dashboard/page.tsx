@@ -49,6 +49,8 @@ const icons = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Dashboard page
 // ─────────────────────────────────────────────────────────────────────────────
+
+
 export default function Dashboard() {
   const router = useRouter();
 
@@ -62,6 +64,8 @@ export default function Dashboard() {
         setCurrentUserId(session.user.id);
         setCurrentUserName(session.user.user_metadata?.full_name || session.user.user_metadata?.name || null);
       }
+
+
     });
   }, [router]);
 
@@ -69,6 +73,8 @@ export default function Dashboard() {
     await superbase.auth.signOut();
     router.replace("/login");
   };
+
+
 
   // ── Workspace data ────────────────────────────────────────────────────────
   const {
@@ -126,6 +132,11 @@ export default function Dashboard() {
     if (!activeProject || collections.length === 0) return;
     setAddingTaskInModule(collections[0].id);
   }, [activeProject, collections]);
+
+
+  useEffect(() => {
+    setActiveProject(projects?.[0] || null)
+  }, [projects])
 
   // ── Task inline submit ────────────────────────────────────────────────────
   const handleSubmitTask = useCallback(async (title: string, description: string) => {
@@ -367,7 +378,7 @@ export default function Dashboard() {
                               className="w-[26px] h-[26px] rounded-[5px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#27272A] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors shrink-0"
                               title="Workspace settings"
                             >
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
                             </button>
                           )}
                           {activeWorkspace?.id === ws.id && <span>{icons.check}</span>}
@@ -662,11 +673,10 @@ function SidebarContent({ icons, activeWorkspace, projects, projLoading, projErr
           {!projLoading && !projError && projects.map((project) => (
             <div
               key={project.id}
-              className={`w-full flex items-center gap-[8px] h-[40px] px-[8px] rounded-[6px] transition-colors duration-100 group ${
-                activeProject?.id === project.id
-                  ? "bg-[#F4F4F5] dark:bg-[#18181B] text-[#09090B] dark:text-[#FAFAFA]"
-                  : "text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA]"
-              }`}
+              className={`w-full flex items-center gap-[8px] h-[40px] px-[8px] rounded-[6px] transition-colors duration-100 group ${activeProject?.id === project.id
+                ? "bg-[#F4F4F5] dark:bg-[#18181B] text-[#09090B] dark:text-[#FAFAFA]"
+                : "text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA]"
+                }`}
             >
               <button onClick={() => onSelectProject(project)} className="flex items-center gap-[8px] flex-1 min-w-0 h-full text-left">
                 <span className="text-[14px] leading-none shrink-0">{project.emoji}</span>
@@ -678,7 +688,7 @@ function SidebarContent({ icons, activeWorkspace, projects, projLoading, projErr
                 className="w-[22px] h-[22px] rounded-[4px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#27272A] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-all opacity-0 group-hover:opacity-100 shrink-0"
                 title="Project settings"
               >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>
               </button>
             </div>
           ))}

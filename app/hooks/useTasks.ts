@@ -84,7 +84,7 @@ export function useTasks(collectionIds: string[]): UseTasksResult {
         .in("collection_id", collectionIds)
         .order("position", { ascending: true });
 
-      console.log("All collections and their tasks ", data)
+      // console.log("All collections and their tasks ", data)
       if (fetchError) throw new Error(fetchError.message);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const shaped: Task[] = (data ?? []).map((row: any) => ({
