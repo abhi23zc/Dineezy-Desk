@@ -732,11 +732,11 @@ export function ModuleCard({
       </div>
 
       {/* Assignees row */}
-      {(collection.collection_assignees.length > 0 || assignPickerOpen) && (
+      {(collection.collection_assignees?.length > 0 || assignPickerOpen) && (
         <div className="px-[16px] py-[8px] border-b border-[#E4E4E7] dark:border-[#27272A] flex items-center gap-[8px] flex-wrap relative">
           <span className="text-[11px] text-[#A1A1AA] shrink-0">Assigned:</span>
           <div className="flex items-center gap-[4px] flex-wrap">
-            {collection.collection_assignees.map((a) => (
+            {(collection.collection_assignees ?? []).map((a) => (
               <span key={a.user_id} className="group inline-flex items-center gap-[4px] h-[24px] px-[8px] rounded-full bg-[#F4F4F5] dark:bg-[#18181B] text-[11px] text-[#52525B] dark:text-[#A1A1AA]">
                 {a.profiles?.avatar_url ? (
                   <img src={a.profiles.avatar_url} className="w-[14px] h-[14px] rounded-full" alt="" />
@@ -763,11 +763,11 @@ export function ModuleCard({
           {/* Assignee picker dropdown */}
           {assignPickerOpen && (
             <div ref={assignPickerRef} className="absolute left-[16px] top-[calc(100%+4px)] z-50 w-[200px] max-h-[200px] overflow-y-auto bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] py-[4px]">
-              {members.filter((m) => !collection.collection_assignees.some((a) => a.user_id === m.user_id)).length === 0 ? (
+              {members.filter((m) => !(collection.collection_assignees ?? []).some((a) => a.user_id === m.user_id)).length === 0 ? (
                 <p className="px-[12px] py-[8px] text-[12px] text-[#A1A1AA]">All members assigned</p>
               ) : (
                 members
-                  .filter((m) => !collection.collection_assignees.some((a) => a.user_id === m.user_id))
+                  .filter((m) => !(collection.collection_assignees ?? []).some((a) => a.user_id === m.user_id))
                   .map((m) => (
                     <button
                       key={m.user_id}
