@@ -18,6 +18,7 @@ import { CreateProjectModal } from "../components/create-project-modal";
 import { WorkspaceSettingsModal } from "../components/workspace-settings-modal";
 import { ProjectSettingsModal } from "../components/project-settings-modal";
 import { InviteMemberModal } from "../components/invite-member-modal";
+import { Onboarding } from "../components/onboarding";
 
 // ── Dashboard UI components ───────────────────────────────────────────────────
 import {
@@ -53,10 +54,14 @@ export default function Dashboard() {
 
   // ── Auth guard ───────────────────────────────────────────────────────────
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   useEffect(() => {
     superbase.auth.getSession().then(({ data: { session } }) => {
       if (!session) router.replace("/login");
-      else setCurrentUserId(session.user.id);
+      else {
+        setCurrentUserId(session.user.id);
+        setCurrentUserName(session.user.user_metadata?.full_name || session.user.user_metadata?.name || null);
+      }
     });
   }, [router]);
 
@@ -195,6 +200,16 @@ export default function Dashboard() {
   // Render
   // ─────────────────────────────────────────────────────────────────────────
   if (!currentUserId) return null;
+
+  if (!wsLoading && workspaces.length === 0) {
+    return (
+      <Onboarding
+        userId={currentUserId}
+        userName={currentUserName}
+        onComplete={() => { refetchWorkspaces(); }}
+      />
+    );
+  }
 
   return (
     <div className="flex h-screen w-full bg-[#FAFAFA] dark:bg-[#000000] font-sans text-[#09090B] dark:text-[#FAFAFA] transition-colors duration-150">

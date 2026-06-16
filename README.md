@@ -1,4 +1,4 @@
-# Dineezy Trak
+# Dineezy Desk
 
 A project management dashboard for teams. Built as a single-page app with real-time workspace switching, task boards, and team collaboration — inspired by Linear and Notion.
 
@@ -35,8 +35,8 @@ A project management dashboard for teams. Built as a single-page app with real-t
 1. Clone the repo:
 
 ```bash
-git clone https://github.com/your-username/dineezy-trak.git
-cd dineezy-trak
+git clone https://github.com/abhi23zc/Dineezy-Desk.git
+cd Dineezy-Desk
 ```
 
 2. Install dependencies:
@@ -106,7 +106,9 @@ supabase/
 ## Roadmap
 
 - [ ] My Tasks — personal task view across all projects
-- [ ] Analytics — project progress charts and stats
+- [ ] Analytics — project progress charts, completion stats, overdue tracking
+- [ ] Notifications — WhatsApp, Telegram, Email, and other app integrations to stay updated on task changes and deadlines
+- [ ] Advanced Team Management — role-based permissions, activity logs, member performance insights
 - [ ] Task comments and activity log
 - [ ] Drag-to-reorder tasks and modules
 - [ ] Row-level security policies

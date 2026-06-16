@@ -49,7 +49,7 @@ export default function SignupPage() {
   const handleGoogleSignup = async () => {
     const { error } = await superbase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/dashboard` },
+      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
     });
     if (error) setError(error.message);
   };
