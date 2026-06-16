@@ -58,7 +58,12 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#000000] font-sans text-[#09090B] dark:text-[#FAFAFA] transition-colors duration-150">
       <div className="w-full max-w-[360px] bg-[#FFFFFF] dark:bg-[#0A0A0A] rounded-[8px] border border-[#E4E4E7] dark:border-[#27272A] p-[24px] transition-colors duration-150">
         {/* Header */}
-        <div className="text-center mb-[24px]">
+        <div className="text-center mb-[24px] flex flex-col items-center">
+          <img
+            src="/Dineezy_desk_logo.png"
+            alt="Dineezy Logo"
+            className="w-[44px] h-[44px] object-contain rounded-[8px] mb-[12px] dark:invert"
+          />
           <h1 className="text-[20px] font-semibold text-[#09090B] dark:text-[#FAFAFA] leading-[1.3] mb-[4px]">
             Create an account
           </h1>

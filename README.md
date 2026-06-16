@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dineezy Trak
+
+A project management dashboard for teams. Built as a single-page app with real-time workspace switching, task boards, and team collaboration — inspired by Linear and Notion.
+
+## Features
+
+- **Workspaces** — Create and switch between multiple workspaces. Edit name, emoji, slug, or delete.
+- **Projects** — Organize work into projects with custom colors, emoji, and status (active/archived/completed).
+- **Collections (Modules)** — Group tasks into collections within a project. Assign team members to collections.
+- **Tasks** — Create, edit, delete tasks with priority levels, due dates, status tracking, and assignees.
+- **Team Management** — Invite members by email, assign roles (admin/member/guest), remove members.
+- **Dark Mode** — Full light/dark theme support with system preference detection.
+- **Responsive** — Works on desktop with a collapsible sidebar drawer for mobile.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS 4 |
+| Database | Supabase (PostgreSQL) |
+| Auth | Supabase Auth (Email + Google OAuth) |
+| State | React hooks with optimistic updates |
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- A [Supabase](https://supabase.com) project
+
+### Setup
+
+1. Clone the repo:
+
+```bash
+git clone https://github.com/your-username/dineezy-trak.git
+cd dineezy-trak
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Create a `.env` file in the root:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+4. Apply database migrations:
+
+```bash
+supabase db push
+```
+
+5. Start the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+├── (auth)/           # Login & signup pages
+├── api/              # API routes (invite member)
+├── components/       # UI components & modals
+├── dashboard/        # Main dashboard page
+├── hooks/            # Data hooks (workspaces, projects, collections, tasks, members)
+utils/
+├── supabase_client.ts
+supabase/
+├── migrations/       # SQL migrations
+```
 
-## Learn More
+## Database Schema
 
-To learn more about Next.js, take a look at the following resources:
+- `profiles` — User profiles (synced from Supabase Auth)
+- `workspaces` — Team workspaces
+- `workspace_members` — Membership with roles (owner/admin/member/guest)
+- `projects` — Projects within a workspace
+- `collections` — Task groups within a project
+- `collection_assignees` — Members assigned to a collection
+- `tasks` — Individual tasks with priority, status, due date
+- `task_assignees` — Members assigned to a task
+- `attachments` — File attachments on tasks
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
 
-## Deploy on Vercel
+## Roadmap
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [ ] My Tasks — personal task view across all projects
+- [ ] Analytics — project progress charts and stats
+- [ ] Task comments and activity log
+- [ ] Drag-to-reorder tasks and modules
+- [ ] Row-level security policies
+- [ ] Onboarding flow for new users
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT

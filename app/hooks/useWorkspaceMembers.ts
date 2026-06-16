@@ -9,11 +9,14 @@ export type WorkspaceMember = {
   role: string;
   full_name: string | null;
   avatar_url: string | null;
+  email: string | null;
 };
 
 type UseWorkspaceMembersResult = {
   members: WorkspaceMember[];
   loading: boolean;
+  refetch: () => void;
+  removeMember: (userId: string) => Promise<void>;
 };
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -30,7 +33,7 @@ export function useWorkspaceMembers(workspaceId: string | null | undefined): Use
         .from("workspace_members")
         .select(`
           user_id, role,
-          profiles ( full_name, avatar_url )
+          profiles ( full_name, avatar_url, email )
         `)
         .eq("workspace_id", workspaceId);
 
@@ -40,6 +43,7 @@ export function useWorkspaceMembers(workspaceId: string | null | undefined): Use
         role: row.role,
         full_name: row.profiles?.full_name ?? null,
         avatar_url: row.profiles?.avatar_url ?? null,
+        email: row.profiles?.email ?? null,
       })));
     } finally {
       setLoading(false);
@@ -48,5 +52,16 @@ export function useWorkspaceMembers(workspaceId: string | null | undefined): Use
 
   useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
-  return { members, loading };
+  const removeMember = useCallback(async (userId: string) => {
+    if (!workspaceId) return;
+    setMembers((prev) => prev.filter((m) => m.user_id !== userId));
+    const { error } = await superbase
+      .from("workspace_members")
+      .delete()
+      .eq("workspace_id", workspaceId)
+      .eq("user_id", userId);
+    if (error) fetchMembers();
+  }, [workspaceId, fetchMembers]);
+
+  return { members, loading, refetch: fetchMembers, removeMember };
 }

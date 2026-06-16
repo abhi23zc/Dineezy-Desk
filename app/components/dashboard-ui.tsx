@@ -14,32 +14,32 @@ import { type WorkspaceMember } from "../hooks/useWorkspaceMembers";
 // Icons
 // ─────────────────────────────────────────────────────────────────────────────
 export const Icon = {
-  module: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="4" y="9" width="16" height="6"/><line x1="10" y1="4" x2="10" y2="20"/></svg>,
-  plus:   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-  check:  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
-  chevronDown: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
-  folder: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
-  inbox:  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>,
-  menu:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
-  x:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  module: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" /><rect x="4" y="9" width="16" height="6" /><line x1="10" y1="4" x2="10" y2="20" /></svg>,
+  plus: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>,
+  check: <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>,
+  chevronDown: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>,
+  folder: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>,
+  inbox: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>,
+  menu: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>,
+  x: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Style maps
 // ─────────────────────────────────────────────────────────────────────────────
 const PRIORITY_STYLE: Record<TaskPriority, string> = {
-  low:      "bg-[#F4F4F5] dark:bg-[#18181B] text-[#52525B] dark:text-[#A1A1AA]",
-  medium:   "bg-[#FFFBEB] dark:bg-[rgba(245,158,11,0.15)] text-[#92400E] dark:text-[#FBBF24]",
-  high:     "bg-[#FEF2F2] dark:bg-[rgba(239,68,68,0.15)] text-[#991B1B] dark:text-[#F87171]",
+  low: "bg-[#F4F4F5] dark:bg-[#18181B] text-[#52525B] dark:text-[#A1A1AA]",
+  medium: "bg-[#FFFBEB] dark:bg-[rgba(245,158,11,0.15)] text-[#92400E] dark:text-[#FBBF24]",
+  high: "bg-[#FEF2F2] dark:bg-[rgba(239,68,68,0.15)] text-[#991B1B] dark:text-[#F87171]",
   critical: "bg-[#FDF2F8] dark:bg-[rgba(236,72,153,0.15)] text-[#831843] dark:text-[#F0ABFC]",
 };
 
 export const STATUS_STYLE: Record<TaskStatus, string> = {
-  todo:        "bg-[#FAFAFA] dark:bg-[#09090B] text-[#52525B] dark:text-[#A1A1AA] border border-[#E4E4E7] dark:border-[#27272A]",
+  todo: "bg-[#FAFAFA] dark:bg-[#09090B] text-[#52525B] dark:text-[#A1A1AA] border border-[#E4E4E7] dark:border-[#27272A]",
   in_progress: "bg-[#F4F4F5] dark:bg-[#18181B] text-[#09090B] dark:text-[#FAFAFA]",
-  review:      "bg-[#FFFBEB] dark:bg-[rgba(245,158,11,0.15)] text-[#92400E] dark:text-[#FBBF24]",
-  done:        "bg-[#ECFDF5] dark:bg-[rgba(16,185,129,0.15)] text-[#065F46] dark:text-[#34D399]",
-  blocked:     "bg-[#FEF2F2] dark:bg-[rgba(239,68,68,0.15)] text-[#991B1B] dark:text-[#F87171]",
+  review: "bg-[#FFFBEB] dark:bg-[rgba(245,158,11,0.15)] text-[#92400E] dark:text-[#FBBF24]",
+  done: "bg-[#ECFDF5] dark:bg-[rgba(16,185,129,0.15)] text-[#065F46] dark:text-[#34D399]",
+  blocked: "bg-[#FEF2F2] dark:bg-[rgba(239,68,68,0.15)] text-[#991B1B] dark:text-[#F87171]",
 };
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
@@ -165,10 +165,10 @@ interface StatsRowProps { stats: TaskStats; collectionCount: number; }
 export function StatsRow({ stats, collectionCount }: StatsRowProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-[12px] md:gap-[16px] mb-[24px] md:mb-[32px]">
-      <StatCard label="Total tasks"  value={stats.total}      sub={`across ${collectionCount} module${collectionCount !== 1 ? "s" : ""}`} />
-      <StatCard label="In progress"  value={stats.inProgress} sub={stats.overdue > 0 ? `${stats.overdue} overdue` : "on track"} subDanger={stats.overdue > 0} />
-      <StatCard label="Completed"    value={stats.completed}  sub="this sprint" />
-      <StatCard label="Unassigned"   value={stats.unassigned} sub="needs owner" />
+      <StatCard label="Total tasks" value={stats.total} sub={`across ${collectionCount} module${collectionCount !== 1 ? "s" : ""}`} />
+      <StatCard label="In progress" value={stats.inProgress} sub={stats.overdue > 0 ? `${stats.overdue} overdue` : "on track"} subDanger={stats.overdue > 0} />
+      <StatCard label="Completed" value={stats.completed} sub="this sprint" />
+      <StatCard label="Unassigned" value={stats.unassigned} sub="needs owner" />
     </div>
   );
 }
@@ -216,9 +216,8 @@ export function TaskRow({
       {/* Main row */}
       <div
         onClick={onToggleExpand}
-        className={`flex items-center px-[16px] min-h-[44px] md:min-h-[40px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 cursor-pointer group ${
-          !isLast || isExpanded ? "border-b border-[#E4E4E7] dark:border-[#27272A]" : ""
-        }`}
+        className={`flex items-center px-[16px] min-h-[44px] md:min-h-[40px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 cursor-pointer group ${!isLast || isExpanded ? "border-b border-[#E4E4E7] dark:border-[#27272A]" : ""
+          }`}
       >
         {/* Checkbox — toggles done only */}
         <div
@@ -226,11 +225,10 @@ export function TaskRow({
           aria-checked={isDone}
           aria-label={isDone ? "Mark as todo" : "Mark as done"}
           onClick={(e) => { e.stopPropagation(); onToggleDone(); }}
-          className={`w-[16px] h-[16px] rounded-[4px] mr-[12px] shrink-0 flex items-center justify-center cursor-pointer transition-colors duration-100 ${
-            isDone
-              ? "bg-[#09090B] dark:bg-[#FAFAFA]"
-              : "border border-[#A1A1AA] dark:border-[#52525B] hover:border-[#09090B] dark:hover:border-[#FAFAFA]"
-          }`}
+          className={`w-[16px] h-[16px] rounded-[4px] mr-[12px] shrink-0 flex items-center justify-center cursor-pointer transition-colors duration-100 ${isDone
+            ? "bg-[#09090B] dark:bg-[#FAFAFA]"
+            : "border border-[#A1A1AA] dark:border-[#52525B] hover:border-[#09090B] dark:hover:border-[#FAFAFA]"
+            }`}
         >
           {isDone && <span className="text-white dark:text-[#09090B]">{Icon.check}</span>}
         </div>
@@ -334,9 +332,8 @@ function ExpandedTaskPanel({
   const unassignedMembers = members.filter((m) => !assignedIds.has(m.user_id));
 
   return (
-    <div className={`px-[16px] sm:px-[44px] py-[14px] bg-[#FAFAFA] dark:bg-[#09090B] flex flex-col gap-[10px] ${
-      !isLast ? "border-b border-[#E4E4E7] dark:border-[#27272A]" : ""
-    }`}>
+    <div className={`px-[16px] sm:px-[44px] py-[14px] bg-[#FAFAFA] dark:bg-[#09090B] flex flex-col gap-[10px] ${!isLast ? "border-b border-[#E4E4E7] dark:border-[#27272A]" : ""
+      }`}>
 
       {/* Editable title */}
       {editingTitle ? (
@@ -394,9 +391,8 @@ function ExpandedTaskPanel({
             />
           ) : (
             <button onClick={() => setShowDateInput(true)}
-              className={`text-[11px] px-[6px] py-[2px] rounded-[4px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors ${
-                isOverdue ? "text-[#991B1B] dark:text-[#F87171]" : task.due_date ? "text-[#52525B] dark:text-[#A1A1AA]" : "text-[#A1A1AA] italic"
-              }`}>
+              className={`text-[11px] px-[6px] py-[2px] rounded-[4px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors ${isOverdue ? "text-[#991B1B] dark:text-[#F87171]" : task.due_date ? "text-[#52525B] dark:text-[#A1A1AA]" : "text-[#A1A1AA] italic"
+                }`}>
               {task.due_date
                 ? new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
                 : "Set date"}
@@ -437,9 +433,9 @@ function ExpandedTaskPanel({
                     onClick={() => { onAssignUser({ user_id: m.user_id, full_name: m.full_name, avatar_url: null }); setAssignOpen(false); }}
                     className="w-full flex items-center gap-[8px] px-[10px] h-[36px] text-left hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors">
                     <div className={`w-[20px] h-[20px] rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} text-[9px] font-medium flex items-center justify-center shrink-0`}>
-                      {initials(m.full_name)}
+                      {initials(m.full_name || m.email)}
                     </div>
-                    <span className="text-[12px] truncate">{m.full_name ?? "Unknown"}</span>
+                    <span className="text-[12px] truncate">{m.full_name || m.email || "Unknown"}</span>
                   </button>
                 ))}
             </div>
@@ -522,7 +518,7 @@ export function InlineTaskInput({ onSubmit, onCancel }: InlineTaskInputProps) {
       </div>
       {/* Description row — shown after Enter on title */}
       {phase === "description" && (
-        <div className="px-[44px] pb-[12px] flex flex-col gap-[6px]">
+        <div className="px-[16px] sm:px-[44px] pb-[12px] flex flex-col gap-[6px]">
           <textarea
             ref={descRef}
             value={description}
@@ -614,6 +610,8 @@ interface ModuleCardProps {
   onCancelAddTask: () => void;
   onRenameCollection: (name: string) => Promise<void>;
   onDeleteCollection: () => Promise<void>;
+  onAssignCollection: (userId: string) => Promise<void>;
+  onUnassignCollection: (userId: string) => Promise<void>;
 }
 
 export function ModuleCard({
@@ -623,6 +621,7 @@ export function ModuleCard({
   members, onAssignUser, onUnassignUser,
   addingTaskInModule, onStartAddTask, onSubmitTask, onCancelAddTask,
   onRenameCollection, onDeleteCollection,
+  onAssignCollection, onUnassignCollection,
 }: ModuleCardProps) {
   const done = tasks.filter((t) => t.status === "done").length;
   const total = tasks.length;
@@ -636,6 +635,9 @@ export function ModuleCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  // Assignee picker state
+  const [assignPickerOpen, setAssignPickerOpen] = useState(false);
+  const assignPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setNameDraft(collection.name); }, [collection.name]);
   useEffect(() => {
@@ -644,6 +646,12 @@ export function ModuleCard({
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [menuOpen]);
+  useEffect(() => {
+    if (!assignPickerOpen) return;
+    const h = (e: MouseEvent) => { if (assignPickerRef.current && !assignPickerRef.current.contains(e.target as Node)) setAssignPickerOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [assignPickerOpen]);
 
   const commitRename = () => {
     setRenaming(false);
@@ -689,6 +697,10 @@ export function ModuleCard({
               <div className="absolute right-0 top-[calc(100%+4px)] z-50 w-[160px] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] py-[4px] overflow-hidden">
                 {!confirmDel ? (
                   <>
+                    <button onClick={() => { setAssignPickerOpen(true); setMenuOpen(false); }}
+                      className="w-full flex items-center gap-[8px] px-[12px] h-[34px] text-left text-[13px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors">
+                      Assign users
+                    </button>
                     <button onClick={() => { setRenaming(true); setMenuOpen(false); }}
                       className="w-full flex items-center gap-[8px] px-[12px] h-[34px] text-left text-[13px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors">
                       Rename
@@ -718,6 +730,65 @@ export function ModuleCard({
           </div>
         </div>
       </div>
+
+      {/* Assignees row */}
+      {(collection.collection_assignees.length > 0 || assignPickerOpen) && (
+        <div className="px-[16px] py-[8px] border-b border-[#E4E4E7] dark:border-[#27272A] flex items-center gap-[8px] flex-wrap relative">
+          <span className="text-[11px] text-[#A1A1AA] shrink-0">Assigned:</span>
+          <div className="flex items-center gap-[4px] flex-wrap">
+            {collection.collection_assignees.map((a) => (
+              <span key={a.user_id} className="group inline-flex items-center gap-[4px] h-[24px] px-[8px] rounded-full bg-[#F4F4F5] dark:bg-[#18181B] text-[11px] text-[#52525B] dark:text-[#A1A1AA]">
+                {a.profiles?.avatar_url ? (
+                  <img src={a.profiles.avatar_url} className="w-[14px] h-[14px] rounded-full" alt="" />
+                ) : (
+                  <span className="w-[14px] h-[14px] rounded-full bg-[#E4E4E7] dark:bg-[#27272A] flex items-center justify-center text-[9px] font-medium">
+                    {(a.profiles?.full_name || "?")[0].toUpperCase()}
+                  </span>
+                )}
+                <span className="truncate max-w-[80px]">{a.profiles?.full_name || "User"}</span>
+                <button
+                  onClick={() => onUnassignCollection(a.user_id)}
+                  className="opacity-0 group-hover:opacity-100 ml-[2px] text-[#A1A1AA] hover:text-[#991B1B] dark:hover:text-[#F87171] transition-opacity"
+                  title="Remove"
+                >×</button>
+              </span>
+            ))}
+            <button
+              onClick={() => setAssignPickerOpen((v) => !v)}
+              className="w-[24px] h-[24px] rounded-full border border-dashed border-[#D4D4D8] dark:border-[#3F3F46] flex items-center justify-center text-[#A1A1AA] hover:border-[#09090B] dark:hover:border-[#FAFAFA] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors text-[12px]"
+              title="Assign user"
+            >+</button>
+          </div>
+
+          {/* Assignee picker dropdown */}
+          {assignPickerOpen && (
+            <div ref={assignPickerRef} className="absolute left-[16px] top-[calc(100%+4px)] z-50 w-[200px] max-h-[200px] overflow-y-auto bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] py-[4px]">
+              {members.filter((m) => !collection.collection_assignees.some((a) => a.user_id === m.user_id)).length === 0 ? (
+                <p className="px-[12px] py-[8px] text-[12px] text-[#A1A1AA]">All members assigned</p>
+              ) : (
+                members
+                  .filter((m) => !collection.collection_assignees.some((a) => a.user_id === m.user_id))
+                  .map((m) => (
+                    <button
+                      key={m.user_id}
+                      onClick={() => { onAssignCollection(m.user_id); setAssignPickerOpen(false); }}
+                      className="w-full flex items-center gap-[8px] px-[12px] h-[34px] text-left text-[13px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors"
+                    >
+                      {m.avatar_url ? (
+                        <img src={m.avatar_url} className="w-[18px] h-[18px] rounded-full" alt="" />
+                      ) : (
+                        <span className="w-[18px] h-[18px] rounded-full bg-[#E4E4E7] dark:bg-[#27272A] flex items-center justify-center text-[10px] font-medium">
+                          {(m.full_name || "?")[0].toUpperCase()}
+                        </span>
+                      )}
+                      <span className="truncate">{m.full_name || "User"}</span>
+                    </button>
+                  ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Task rows */}
       <div className="flex flex-col">
@@ -827,9 +898,14 @@ interface RightPanelProps {
   progressPercent: number;
   completedTasks: number;
   totalTasks: number;
+  onInvite: () => void;
+  currentUserId: string | null;
+  onRemoveMember: (userId: string) => void;
 }
 
-export function RightPanel({ members, membersLoading, progressPercent, completedTasks, totalTasks }: RightPanelProps) {
+export function RightPanel({ members, membersLoading, progressPercent, completedTasks, totalTasks, onInvite, currentUserId, onRemoveMember }: RightPanelProps) {
+  const currentMember = members.find((m) => m.user_id === currentUserId);
+  const canRemove = currentMember?.role === "owner" || currentMember?.role === "admin";
   return (
     <aside className="hidden lg:flex w-[220px] shrink-0 border-l border-[#E4E4E7] dark:border-[#27272A] bg-[#FFFFFF] dark:bg-[#09090B] flex-col p-[20px] transition-colors duration-150">
       <div className="mb-[32px]">
@@ -842,11 +918,24 @@ export function RightPanel({ members, membersLoading, progressPercent, completed
             </div>
           ))}
           {!membersLoading && members.map((m, i) => (
-            <div key={m.user_id} className="flex items-center gap-[10px]">
-              <div className={`w-[24px] h-[24px] rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} text-[10px] font-medium flex items-center justify-center shrink-0`}>
-                {initials(m.full_name)}
-              </div>
-              <div className="text-[13px] truncate">{m.full_name ?? "Unknown"}</div>
+            <div key={m.user_id} className="flex items-center gap-[10px] group">
+              {m.avatar_url ? (
+                <img src={m.avatar_url} alt="" className="w-[24px] h-[24px] rounded-full object-cover shrink-0" />
+              ) : (
+                <div className={`w-[24px] h-[24px] rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} text-[10px] font-medium flex items-center justify-center shrink-0`}>
+                  {initials(m.full_name || m.email)}
+                </div>
+              )}
+              <div className="text-[13px] truncate flex-1">{m.full_name || m.email || "Unknown"}</div>
+              {canRemove && m.user_id !== currentUserId && m.role !== "owner" && (
+                <button
+                  onClick={() => onRemoveMember(m.user_id)}
+                  className="w-[18px] h-[18px] rounded-[4px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#FEE2E2] hover:text-[#991B1B] dark:hover:bg-[rgba(239,68,68,0.1)] dark:hover:text-[#F87171] opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                  title="Remove member"
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              )}
             </div>
           ))}
           {!membersLoading && members.length === 0 && (
@@ -866,7 +955,7 @@ export function RightPanel({ members, membersLoading, progressPercent, completed
         </div>
       </div>
 
-      <button className="w-full h-[32px] rounded-[6px] border border-[#E4E4E7] dark:border-[#27272A] text-[13px] font-medium hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100">
+      <button onClick={onInvite} className="w-full h-[32px] rounded-[6px] border border-[#E4E4E7] dark:border-[#27272A] text-[13px] font-medium hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100">
         Invite member
       </button>
     </aside>
@@ -896,7 +985,14 @@ export function MobileSidebarDrawer({ isOpen, onClose, children }: MobileSidebar
         style={{ animation: "slideInLeft 0.2s ease-out" }}
       >
         <div className="flex items-center justify-between px-[20px] py-[16px] border-b border-[#E4E4E7] dark:border-[#27272A]">
-          <span className="text-[14px] font-medium">Menu</span>
+          <div className="flex items-center gap-[8px]">
+            <img
+              src="/Dineezy_desk_logo.png"
+              alt="Dineezy Logo"
+              className="w-[20px] h-[20px] object-contain rounded-[4px] dark:invert"
+            />
+            <span className="text-[14px] font-semibold tracking-tight text-[#09090B] dark:text-[#FAFAFA]">Dineezy Desk</span>
+          </div>
           <button onClick={onClose} className="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B]">
             {Icon.x}
           </button>

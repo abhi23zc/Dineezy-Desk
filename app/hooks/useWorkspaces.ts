@@ -20,6 +20,8 @@ type UseWorkspacesResult = {
   setActiveWorkspace: (ws: WorkspaceItem) => void;
   /** Append a newly created workspace and switch to it */
   addWorkspace: (ws: WorkspaceItem) => void;
+  updateWorkspace: (id: string, fields: { name?: string; emoji?: string; slug?: string; description?: string }) => Promise<void>;
+  deleteWorkspace: (id: string) => Promise<void>;
   loading: boolean;
   error: string | null;
   /** Manually re-fetch (e.g. after an error) */
@@ -109,11 +111,32 @@ export function useWorkspaces(): UseWorkspacesResult {
     setActiveWorkspace(ws);
   }, []);
 
+  const updateWorkspace = useCallback(async (id: string, fields: { name?: string; emoji?: string; slug?: string; description?: string }) => {
+    // Optimistic update
+    setWorkspaces((prev) => prev.map((ws) => ws.id === id ? { ...ws, ...fields } : ws));
+    setActiveWorkspace((prev) => prev?.id === id ? { ...prev, ...fields } : prev);
+    const { error: updateError } = await superbase
+      .from("workspaces")
+      .update({ ...fields, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (updateError) fetchWorkspaces(); // rollback on failure
+  }, [fetchWorkspaces]);
+
+  const deleteWorkspace = useCallback(async (id: string) => {
+    const remaining = workspaces.filter((ws) => ws.id !== id);
+    setWorkspaces(remaining);
+    setActiveWorkspace((prev) => prev?.id === id ? (remaining[0] ?? null) : prev);
+    const { error: delError } = await superbase.from("workspaces").delete().eq("id", id);
+    if (delError) fetchWorkspaces(); // rollback on failure
+  }, [workspaces, fetchWorkspaces]);
+
   return {
     workspaces,
     activeWorkspace,
     setActiveWorkspace,
     addWorkspace,
+    updateWorkspace,
+    deleteWorkspace,
     loading,
     error,
     refetch: fetchWorkspaces,

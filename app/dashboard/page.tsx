@@ -15,6 +15,9 @@ import { useWorkspaceMembers } from "../hooks/useWorkspaceMembers";
 // ── Modals ────────────────────────────────────────────────────────────────────
 import { CreateWorkspaceModal, type Workspace } from "../components/create-workspace-modal";
 import { CreateProjectModal } from "../components/create-project-modal";
+import { WorkspaceSettingsModal } from "../components/workspace-settings-modal";
+import { ProjectSettingsModal } from "../components/project-settings-modal";
+import { InviteMemberModal } from "../components/invite-member-modal";
 
 // ── Dashboard UI components ───────────────────────────────────────────────────
 import {
@@ -49,9 +52,11 @@ export default function Dashboard() {
   const router = useRouter();
 
   // ── Auth guard ───────────────────────────────────────────────────────────
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   useEffect(() => {
     superbase.auth.getSession().then(({ data: { session } }) => {
       if (!session) router.replace("/login");
+      else setCurrentUserId(session.user.id);
     });
   }, [router]);
 
@@ -63,11 +68,12 @@ export default function Dashboard() {
   // ── Workspace data ────────────────────────────────────────────────────────
   const {
     workspaces, activeWorkspace, setActiveWorkspace,
-    addWorkspace, loading: wsLoading, error: wsError, refetch: refetchWorkspaces,
+    addWorkspace, updateWorkspace, deleteWorkspace,
+    loading: wsLoading, error: wsError, refetch: refetchWorkspaces,
   } = useWorkspaces();
 
   // ── Projects for active workspace ─────────────────────────────────────────
-  const { projects, loading: projLoading, error: projError, addProject } = useProjects(activeWorkspace?.id);
+  const { projects, loading: projLoading, error: projError, addProject, updateProject, deleteProject } = useProjects(activeWorkspace?.id);
 
   // ── Active project selection ───────────────────────────────────────────────
   const [activeProject, setActiveProject] = useState<ProjectItem | null>(null);
@@ -79,19 +85,22 @@ export default function Dashboard() {
   }, [setActiveWorkspace]);
 
   // ── Collections for active project ────────────────────────────────────────
-  const { collections, loading: colLoading, addCollection, updateCollectionName, deleteCollection } = useCollections(activeProject?.id);
+  const { collections, loading: colLoading, addCollection, updateCollectionName, deleteCollection, assignCollection, unassignCollection } = useCollections(activeProject?.id);
 
   // ── Tasks for all collections in active project ───────────────────────────
   const collectionIds = useMemo(() => collections.map((c) => c.id), [collections]);
   const { tasks, stats, loading: tasksLoading, addTask, updateTaskStatus, updateTaskDescription, updateTaskTitle, updateTaskPriority, updateTaskDueDate, deleteTask, assignUser, unassignUser } = useTasks(collectionIds);
 
   // ── Workspace members (right panel) ───────────────────────────────────────
-  const { members, loading: membersLoading } = useWorkspaceMembers(activeWorkspace?.id);
+  const { members, loading: membersLoading, refetch: refetchMembers, removeMember } = useWorkspaceMembers(activeWorkspace?.id);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [wsOpen, setWsOpen] = useState(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+  const [wsSettingsOpen, setWsSettingsOpen] = useState(false);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const [projSettingsOpen, setProjSettingsOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [addingTaskInModule, setAddingTaskInModule] = useState<string | null>(null);
   const [addingModule, setAddingModule] = useState(false);
@@ -185,19 +194,21 @@ export default function Dashboard() {
   // ─────────────────────────────────────────────────────────────────────────
   // Render
   // ─────────────────────────────────────────────────────────────────────────
+  if (!currentUserId) return null;
+
   return (
     <div className="flex h-screen w-full bg-[#FAFAFA] dark:bg-[#000000] font-sans text-[#09090B] dark:text-[#FAFAFA] transition-colors duration-150">
 
       {/* ── Sidebar (desktop only) ──────────────────────────────────────── */}
       <aside className="hidden lg:flex w-[220px] shrink-0 border-r border-[#E4E4E7] dark:border-[#27272A] bg-[#FFFFFF] dark:bg-[#09090B] flex-col transition-colors duration-150">
         {/* Logo */}
-        <div className="flex items-center gap-[12px] px-[20px] py-[20px]">
-          <div className="w-[24px] h-[24px] rounded-[6px] bg-[#09090B] dark:bg-[#FAFAFA] flex items-center justify-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="stroke-white dark:stroke-[#09090B]" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="4" /><path d="M9 12l2 2 4-4" />
-            </svg>
-          </div>
-          <span className="text-[14px] font-medium">Dineezy Desk</span>
+        <div className="flex items-center gap-[10px] px-[20px] py-[20px]">
+          <img
+            src="/Dineezy_desk_logo.png"
+            alt="Dineezy Logo"
+            className="w-[24px] h-[24px] object-contain rounded-[6px] dark:invert"
+          />
+          <span className="text-[14px] font-semibold tracking-tight text-[#09090B] dark:text-[#FAFAFA]">Dineezy Desk</span>
         </div>
         <SidebarContent
           icons={icons}
@@ -208,6 +219,7 @@ export default function Dashboard() {
           activeProject={activeProject}
           onSelectProject={setActiveProject}
           onNewProject={() => activeWorkspace && setCreateProjectOpen(true)}
+          onProjectSettings={(p) => { setActiveProject(p); setProjSettingsOpen(true); }}
         />
       </aside>
 
@@ -222,6 +234,7 @@ export default function Dashboard() {
           activeProject={activeProject}
           onSelectProject={(p) => { setActiveProject(p); setMobileSidebarOpen(false); }}
           onNewProject={() => { activeWorkspace && setCreateProjectOpen(true); setMobileSidebarOpen(false); }}
+          onProjectSettings={(p) => { setActiveProject(p); setProjSettingsOpen(true); setMobileSidebarOpen(false); }}
         />
       </MobileSidebarDrawer>
 
@@ -320,20 +333,30 @@ export default function Dashboard() {
                   {!wsLoading && !wsError && workspaces.length > 0 && (
                     <div className="py-[6px]">
                       {workspaces.map((ws) => (
-                        <button
-                          key={ws.id}
-                          onClick={() => { handleSetActiveWorkspace(ws); setWsOpen(false); }}
-                          className={`w-full flex items-center gap-[10px] px-[12px] h-[42px] text-left hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 ${activeWorkspace?.id === ws.id ? "bg-[#F4F4F5] dark:bg-[#18181B]" : ""}`}
-                        >
-                          <span className="w-[28px] h-[28px] rounded-[6px] bg-[#F4F4F5] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#27272A] flex items-center justify-center text-[14px] shrink-0">
-                            {ws.emoji}
-                          </span>
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <span className="text-[13px] font-medium truncate">{ws.name}</span>
-                            <span className="text-[11px] text-[#A1A1AA]">{ws.member_count} member{ws.member_count !== 1 ? "s" : ""}</span>
-                          </div>
+                        <div key={ws.id} className={`w-full flex items-center gap-[10px] px-[12px] h-[42px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 ${activeWorkspace?.id === ws.id ? "bg-[#F4F4F5] dark:bg-[#18181B]" : ""}`}>
+                          <button
+                            onClick={() => { handleSetActiveWorkspace(ws); setWsOpen(false); }}
+                            className="flex items-center gap-[10px] flex-1 min-w-0 h-full text-left"
+                          >
+                            <span className="w-[28px] h-[28px] rounded-[6px] bg-[#F4F4F5] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#27272A] flex items-center justify-center text-[14px] shrink-0">
+                              {ws.emoji}
+                            </span>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="text-[13px] font-medium truncate">{ws.name}</span>
+                              <span className="text-[11px] text-[#A1A1AA]">{ws.member_count} member{ws.member_count !== 1 ? "s" : ""}</span>
+                            </div>
+                          </button>
+                          {activeWorkspace?.id === ws.id && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setWsOpen(false); setWsSettingsOpen(true); }}
+                              className="w-[26px] h-[26px] rounded-[5px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#27272A] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors shrink-0"
+                              title="Workspace settings"
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            </button>
+                          )}
                           {activeWorkspace?.id === ws.id && <span>{icons.check}</span>}
-                        </button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -363,7 +386,7 @@ export default function Dashboard() {
             {activeProject && (
               <>
                 <span className="text-[#D4D4D8] dark:text-[#3F3F46]">/</span>
-                <div className="flex items-center gap-[6px] text-[#52525B] dark:text-[#A1A1AA] max-w-[200px] truncate">
+                <div className="flex items-center gap-[6px] text-[#52525B] dark:text-[#A1A1AA] max-w-[70px] sm:max-w-[200px] truncate">
                   <span className="text-[15px] leading-none shrink-0">{activeProject.emoji}</span>
                   <span className="text-[13px] font-medium truncate">{activeProject.name}</span>
                 </div>
@@ -377,9 +400,10 @@ export default function Dashboard() {
 
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-[6px] h-[32px] px-[12px] rounded-[6px] text-[#991B1B] dark:text-[#F87171] text-[13px] font-medium border border-[#FECACA] dark:border-[rgba(239,68,68,0.3)] hover:bg-[#FEF2F2] dark:hover:bg-[rgba(239,68,68,0.08)] transition-colors duration-100"
+              className="flex items-center justify-center gap-[6px] h-[32px] w-[32px] md:w-auto md:px-[12px] rounded-[6px] text-[#991B1B] dark:text-[#F87171] text-[13px] font-medium border border-[#FECACA] dark:border-[rgba(239,68,68,0.3)] hover:bg-[#FEF2F2] dark:hover:bg-[rgba(239,68,68,0.08)] transition-colors duration-100"
+              title="Sign out"
             >
-              {icons.signout} Sign out
+              {icons.signout} <span className="hidden md:inline">Sign out</span>
             </button>
 
           </div>
@@ -392,33 +416,45 @@ export default function Dashboard() {
             <WelcomeState />
           </div>
         ) : (
-          <main className="flex-1 overflow-y-auto p-[32px]">
+          <main className="flex-1 overflow-y-auto p-[16px] sm:p-[24px] md:p-[32px]">
             {/* Project header */}
-            <div className="mb-[32px]">
-              <div className="flex items-center gap-[12px] mb-[8px]">
-                <span className="text-[28px] leading-none">{activeProject.emoji}</span>
-                <h1 className="text-[20px] font-semibold">{activeProject.name}</h1>
-                <span className={`text-[11px] font-medium px-[8px] py-[3px] rounded-[5px] ${activeProject.status === "active"
-                  ? "bg-[#DCFCE7] dark:bg-[rgba(34,197,94,0.15)] text-[#15803D] dark:text-[#4ADE80]"
-                  : activeProject.status === "completed"
-                    ? "bg-[#DBEAFE] dark:bg-[rgba(59,130,246,0.15)] text-[#1D4ED8] dark:text-[#60A5FA]"
-                    : "bg-[#F4F4F5] dark:bg-[#18181B] text-[#52525B] dark:text-[#A1A1AA]"
-                  }`}>
-                  {activeProject.status.charAt(0).toUpperCase() + activeProject.status.slice(1)}
-                </span>
+            <div className="mb-[32px] flex items-start justify-between gap-[16px]">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-[12px] mb-[8px] flex-wrap">
+                  <span className="text-[28px] leading-none shrink-0">{activeProject.emoji}</span>
+                  <h1 className="text-[20px] font-semibold truncate">{activeProject.name}</h1>
+                  <span className={`text-[11px] font-medium px-[8px] py-[3px] rounded-[5px] shrink-0 ${activeProject.status === "active"
+                    ? "bg-[#DCFCE7] dark:bg-[rgba(34,197,94,0.15)] text-[#15803D] dark:text-[#4ADE80]"
+                    : activeProject.status === "completed"
+                      ? "bg-[#DBEAFE] dark:bg-[rgba(59,130,246,0.15)] text-[#1D4ED8] dark:text-[#60A5FA]"
+                      : "bg-[#F4F4F5] dark:bg-[#18181B] text-[#52525B] dark:text-[#A1A1AA]"
+                    }`}>
+                    {activeProject.status.charAt(0).toUpperCase() + activeProject.status.slice(1)}
+                  </span>
+                </div>
+                {activeProject.description && (
+                  <p className="text-[13px] text-[#52525B] dark:text-[#A1A1AA] max-w-[600px] leading-relaxed">
+                    {activeProject.description}
+                  </p>
+                )}
               </div>
-              {activeProject.description && (
-                <p className="text-[13px] text-[#52525B] dark:text-[#A1A1AA] max-w-[600px] leading-relaxed">
-                  {activeProject.description}
-                </p>
-              )}
+              <button
+                onClick={() => setProjSettingsOpen(true)}
+                className="w-[32px] h-[32px] rounded-[6px] border border-[#E4E4E7] dark:border-[#27272A] flex items-center justify-center text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors shrink-0"
+                title="Project settings"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </button>
             </div>
 
             {/* Content: loading → empty → loaded */}
             {isContentLoading ? (
               <>
                 {/* Stats skeleton */}
-                <div className="grid grid-cols-4 gap-[16px] mb-[32px]">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-[12px] md:gap-[16px] mb-[24px] md:mb-[32px]">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] p-[16px] animate-pulse">
                       <div className="w-[70px] h-[10px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A] mb-[12px]" />
@@ -469,6 +505,8 @@ export default function Dashboard() {
                     onCancelAddTask={() => setAddingTaskInModule(null)}
                     onRenameCollection={(name) => updateCollectionName(collection.id, name)}
                     onDeleteCollection={() => deleteCollection(collection.id)}
+                    onAssignCollection={(userId) => assignCollection(collection.id, userId)}
+                    onUnassignCollection={(userId) => unassignCollection(collection.id, userId)}
                   />
                 ))}
               </>
@@ -502,6 +540,9 @@ export default function Dashboard() {
         progressPercent={stats.progressPercent}
         completedTasks={stats.completed}
         totalTasks={stats.total}
+        onInvite={() => setInviteOpen(true)}
+        currentUserId={currentUserId}
+        onRemoveMember={removeMember}
       />
 
       {/* ── Modals ───────────────────────────────────────────────────────── */}
@@ -511,11 +552,38 @@ export default function Dashboard() {
         onCreated={handleWorkspaceCreated}
       />
       {activeWorkspace && (
-        <CreateProjectModal
-          isOpen={createProjectOpen}
+        <>
+          <CreateProjectModal
+            isOpen={createProjectOpen}
+            workspaceId={activeWorkspace.id}
+            onClose={() => setCreateProjectOpen(false)}
+            onCreated={handleProjectCreated}
+          />
+          <WorkspaceSettingsModal
+            isOpen={wsSettingsOpen}
+            onClose={() => setWsSettingsOpen(false)}
+            workspace={activeWorkspace}
+            onUpdate={(fields) => updateWorkspace(activeWorkspace.id, fields)}
+            onDelete={() => deleteWorkspace(activeWorkspace.id)}
+          />
+        </>
+      )}
+      {activeProject && (
+        <ProjectSettingsModal
+          isOpen={projSettingsOpen}
+          onClose={() => setProjSettingsOpen(false)}
+          project={activeProject}
+          onUpdate={(fields) => updateProject(activeProject.id, fields)}
+          onDelete={async () => { await deleteProject(activeProject.id); setActiveProject(null); }}
+        />
+      )}
+      {activeWorkspace && currentUserId && (
+        <InviteMemberModal
+          isOpen={inviteOpen}
+          onClose={() => setInviteOpen(false)}
           workspaceId={activeWorkspace.id}
-          onClose={() => setCreateProjectOpen(false)}
-          onCreated={handleProjectCreated}
+          requesterId={currentUserId}
+          onInvited={refetchMembers}
         />
       )}
     </div>
@@ -535,9 +603,10 @@ interface SidebarContentProps {
   activeProject: ProjectItem | null;
   onSelectProject: (p: ProjectItem) => void;
   onNewProject: () => void;
+  onProjectSettings: (p: ProjectItem) => void;
 }
 
-function SidebarContent({ icons, activeWorkspace, projects, projLoading, projError, activeProject, onSelectProject, onNewProject }: SidebarContentProps) {
+function SidebarContent({ icons, activeWorkspace, projects, projLoading, projError, activeProject, onSelectProject, onNewProject, onProjectSettings }: SidebarContentProps) {
   return (
     <div className="flex flex-col gap-[24px] px-[12px] py-[8px]">
       {/* Navigation */}
@@ -576,19 +645,27 @@ function SidebarContent({ icons, activeWorkspace, projects, projLoading, projErr
           {!projLoading && !projError && !activeWorkspace && <p className="text-[11px] text-[#A1A1AA] px-[8px] py-[4px] italic">Select a workspace first.</p>}
           {!projLoading && !projError && activeWorkspace && projects.length === 0 && <p className="text-[11px] text-[#A1A1AA] px-[8px] py-[4px] italic">No projects yet.</p>}
           {!projLoading && !projError && projects.map((project) => (
-            <button
+            <div
               key={project.id}
-              onClick={() => onSelectProject(project)}
-              className={`w-full flex items-center gap-[8px] h-[40px] px-[8px] rounded-[6px] text-left transition-colors duration-100 group ${
+              className={`w-full flex items-center gap-[8px] h-[40px] px-[8px] rounded-[6px] transition-colors duration-100 group ${
                 activeProject?.id === project.id
                   ? "bg-[#F4F4F5] dark:bg-[#18181B] text-[#09090B] dark:text-[#FAFAFA]"
                   : "text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA]"
               }`}
             >
-              <span className="text-[14px] leading-none shrink-0">{project.emoji}</span>
-              <span className="text-[13px] truncate flex-1">{project.name}</span>
-              {project.color && <span className="w-[6px] h-[6px] rounded-full shrink-0 opacity-60 group-hover:opacity-100" style={{ backgroundColor: project.color }} />}
-            </button>
+              <button onClick={() => onSelectProject(project)} className="flex items-center gap-[8px] flex-1 min-w-0 h-full text-left">
+                <span className="text-[14px] leading-none shrink-0">{project.emoji}</span>
+                <span className="text-[13px] truncate flex-1">{project.name}</span>
+              </button>
+              {project.color && <span className="w-[6px] h-[6px] rounded-full shrink-0 opacity-60 group-hover:opacity-0" style={{ backgroundColor: project.color }} />}
+              <button
+                onClick={(e) => { e.stopPropagation(); onProjectSettings(project); }}
+                className="w-[22px] h-[22px] rounded-[4px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#27272A] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-all opacity-0 group-hover:opacity-100 shrink-0"
+                title="Project settings"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+              </button>
+            </div>
           ))}
           <button
             onClick={onNewProject}

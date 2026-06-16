@@ -22,6 +22,8 @@ type UseProjectsResult = {
   error: string | null;
   refetch: () => void;
   addProject: (project: ProjectItem) => void;
+  updateProject: (id: string, fields: { name?: string; emoji?: string; color?: string | null; description?: string; status?: ProjectItem["status"] }) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
 };
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
@@ -67,5 +69,20 @@ export function useProjects(workspaceId: string | null | undefined): UseProjects
     setProjects((prev) => [...prev, project]);
   }, []);
 
-  return { projects, loading, error, refetch: fetchProjects, addProject };
+  const updateProject = useCallback(async (id: string, fields: { name?: string; emoji?: string; color?: string | null; description?: string; status?: ProjectItem["status"] }) => {
+    setProjects((prev) => prev.map((p) => p.id === id ? { ...p, ...fields } : p));
+    const { error: updateError } = await superbase
+      .from("projects")
+      .update({ ...fields, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (updateError) fetchProjects();
+  }, [fetchProjects]);
+
+  const deleteProject = useCallback(async (id: string) => {
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+    const { error: delError } = await superbase.from("projects").delete().eq("id", id);
+    if (delError) fetchProjects();
+  }, [fetchProjects]);
+
+  return { projects, loading, error, refetch: fetchProjects, addProject, updateProject, deleteProject };
 }

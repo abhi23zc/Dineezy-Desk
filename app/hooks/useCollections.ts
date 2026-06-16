@@ -11,6 +11,14 @@ export type Collection = {
   description: string | null;
   position: number;
   created_at: string;
+  collection_assignees: {
+    user_id: string;
+    profiles: {
+      full_name: string;
+      avatar_url: string;
+    };
+  }[];
+
 };
 
 type UseCollectionsResult = {
@@ -21,6 +29,9 @@ type UseCollectionsResult = {
   addCollection: (c: Collection) => void;
   updateCollectionName: (id: string, name: string) => Promise<void>;
   deleteCollection: (id: string) => Promise<void>;
+  assignCollection: (collectionId: string, userId: string) => Promise<void>;
+  unassignCollection: (collectionId: string, userId: string) => Promise<void>;
+
 };
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -29,6 +40,44 @@ export function useCollections(projectId: string | null | undefined): UseCollect
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const assignCollection = async (
+    collectionId: string,
+    userId: string
+  ) => {
+    const { error } = await superbase
+      .from("collection_assignees")
+      .insert({
+        collection_id: collectionId,
+        user_id: userId,
+      });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    fetchCollections();
+  };
+
+  const unassignCollection = async (
+    collectionId: string,
+    userId: string
+  ) => {
+    const { error } = await superbase
+      .from("collection_assignees")
+      .delete()
+      .eq("collection_id", collectionId)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    fetchCollections();
+  };
+
+
   const fetchCollections = useCallback(async () => {
     if (!projectId) { setCollections([]); return; }
     setLoading(true);
@@ -36,11 +85,17 @@ export function useCollections(projectId: string | null | undefined): UseCollect
     try {
       const { data, error: fetchError } = await superbase
         .from("collections")
-        .select("id, project_id, name, description, position, created_at")
+        .select(`id, project_id, name, description, position, created_at, 
+            collection_assignees (
+              user_id ,
+              profiles ( full_name, avatar_url )
+            )
+          `)
         .eq("project_id", projectId)
         .order("position", { ascending: true });
       if (fetchError) throw new Error(fetchError.message);
-      setCollections((data ?? []) as Collection[]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setCollections((data ?? []) as any[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load modules.");
     } finally {
@@ -76,5 +131,5 @@ export function useCollections(projectId: string | null | undefined): UseCollect
     if (deleteError) fetchCollections(); // rollback on failure
   }, [fetchCollections]);
 
-  return { collections, loading, error, refetch: fetchCollections, addCollection, updateCollectionName, deleteCollection };
+  return { collections, loading, error, refetch: fetchCollections, addCollection, updateCollectionName, deleteCollection, assignCollection, unassignCollection };
 }
