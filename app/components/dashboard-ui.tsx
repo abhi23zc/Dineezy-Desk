@@ -1,0 +1,914 @@
+"use client";
+
+/**
+ * Pure presentational components for the dashboard.
+ * All logic (data fetching, mutations) lives in hooks — this file is UI only.
+ */
+
+import React, { useEffect, useRef, useState } from "react";
+import { type Task, type TaskStats, type TaskStatus, type TaskPriority } from "../hooks/useTasks";
+import { type Collection } from "../hooks/useCollections";
+import { type WorkspaceMember } from "../hooks/useWorkspaceMembers";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Icons
+// ─────────────────────────────────────────────────────────────────────────────
+export const Icon = {
+  module: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="4" y="9" width="16" height="6"/><line x1="10" y1="4" x2="10" y2="20"/></svg>,
+  plus:   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  check:  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  chevronDown: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+  folder: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
+  inbox:  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>,
+  menu:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+  x:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Style maps
+// ─────────────────────────────────────────────────────────────────────────────
+const PRIORITY_STYLE: Record<TaskPriority, string> = {
+  low:      "bg-[#F4F4F5] dark:bg-[#18181B] text-[#52525B] dark:text-[#A1A1AA]",
+  medium:   "bg-[#FFFBEB] dark:bg-[rgba(245,158,11,0.15)] text-[#92400E] dark:text-[#FBBF24]",
+  high:     "bg-[#FEF2F2] dark:bg-[rgba(239,68,68,0.15)] text-[#991B1B] dark:text-[#F87171]",
+  critical: "bg-[#FDF2F8] dark:bg-[rgba(236,72,153,0.15)] text-[#831843] dark:text-[#F0ABFC]",
+};
+
+export const STATUS_STYLE: Record<TaskStatus, string> = {
+  todo:        "bg-[#FAFAFA] dark:bg-[#09090B] text-[#52525B] dark:text-[#A1A1AA] border border-[#E4E4E7] dark:border-[#27272A]",
+  in_progress: "bg-[#F4F4F5] dark:bg-[#18181B] text-[#09090B] dark:text-[#FAFAFA]",
+  review:      "bg-[#FFFBEB] dark:bg-[rgba(245,158,11,0.15)] text-[#92400E] dark:text-[#FBBF24]",
+  done:        "bg-[#ECFDF5] dark:bg-[rgba(16,185,129,0.15)] text-[#065F46] dark:text-[#34D399]",
+  blocked:     "bg-[#FEF2F2] dark:bg-[rgba(239,68,68,0.15)] text-[#991B1B] dark:text-[#F87171]",
+};
+
+export const STATUS_LABEL: Record<TaskStatus, string> = {
+  todo: "To do", in_progress: "In progress", review: "Review", done: "Done", blocked: "Blocked",
+};
+
+const ALL_STATUSES: TaskStatus[] = ["todo", "in_progress", "review", "done", "blocked"];
+
+const AVATAR_COLORS = [
+  "bg-[#F4F4F5] dark:bg-[#18181B] text-[#09090B] dark:text-[#FAFAFA]",
+  "bg-[#ECFDF5] dark:bg-[rgba(16,185,129,0.15)] text-[#065F46] dark:text-[#34D399]",
+  "bg-[#FEF2F2] dark:bg-[rgba(239,68,68,0.15)] text-[#991B1B] dark:text-[#F87171]",
+  "bg-[#FFFBEB] dark:bg-[rgba(245,158,11,0.15)] text-[#92400E] dark:text-[#FBBF24]",
+  "bg-[#EEF2FF] dark:bg-[rgba(99,102,241,0.15)] text-[#3730A3] dark:text-[#818CF8]",
+];
+
+function initials(name: string | null): string {
+  if (!name) return "?";
+  const parts = name.trim().split(" ");
+  return parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : name.slice(0, 2).toUpperCase();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// StatusDropdown — click the status badge to change it
+// ─────────────────────────────────────────────────────────────────────────────
+interface StatusDropdownProps {
+  current: TaskStatus;
+  onChange: (s: TaskStatus) => void;
+}
+
+function StatusDropdown({ current, onChange }: StatusDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        className={`text-[11px] font-medium px-[6px] py-[2px] rounded-[4px] cursor-pointer hover:opacity-80 transition-opacity ${STATUS_STYLE[current]}`}
+        title="Change status"
+      >
+        {STATUS_LABEL[current]}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-[calc(100%+4px)] z-50 w-[140px] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] py-[4px] overflow-hidden">
+          {ALL_STATUSES.map((s) => (
+            <button
+              key={s}
+              onClick={(e) => { e.stopPropagation(); onChange(s); setOpen(false); }}
+              className={`w-full flex items-center gap-[8px] px-[10px] h-[32px] text-left text-[12px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-75 ${current === s ? "font-medium" : ""}`}
+            >
+              <span className={`text-[11px] font-medium px-[5px] py-[1px] rounded-[3px] ${STATUS_STYLE[s]}`}>
+                {STATUS_LABEL[s]}
+              </span>
+              {current === s && <span className="ml-auto">{Icon.check}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PriorityDropdown
+// ─────────────────────────────────────────────────────────────────────────────
+const PRIORITY_LABEL: Record<TaskPriority, string> = {
+  low: "Low", medium: "Medium", high: "High", critical: "Critical",
+};
+const ALL_PRIORITIES: TaskPriority[] = ["low", "medium", "high", "critical"];
+
+function PriorityDropdown({ current, onChange }: { current: TaskPriority; onChange: (p: TaskPriority) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        className={`text-[11px] font-medium px-[6px] py-[2px] rounded-[4px] cursor-pointer hover:opacity-80 transition-opacity ${PRIORITY_STYLE[current]}`}
+        title="Change priority"
+      >
+        {PRIORITY_LABEL[current]}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-[calc(100%+4px)] z-50 w-[120px] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] py-[4px] overflow-hidden">
+          {ALL_PRIORITIES.map((p) => (
+            <button key={p} onClick={(e) => { e.stopPropagation(); onChange(p); setOpen(false); }}
+              className={`w-full flex items-center gap-[8px] px-[10px] h-[32px] text-left hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-75 ${current === p ? "font-medium" : ""}`}>
+              <span className={`text-[11px] font-medium px-[5px] py-[1px] rounded-[3px] ${PRIORITY_STYLE[p]}`}>{PRIORITY_LABEL[p]}</span>
+              {current === p && <span className="ml-auto">{Icon.check}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// StatsRow
+// ─────────────────────────────────────────────────────────────────────────────
+interface StatsRowProps { stats: TaskStats; collectionCount: number; }
+
+export function StatsRow({ stats, collectionCount }: StatsRowProps) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-[12px] md:gap-[16px] mb-[24px] md:mb-[32px]">
+      <StatCard label="Total tasks"  value={stats.total}      sub={`across ${collectionCount} module${collectionCount !== 1 ? "s" : ""}`} />
+      <StatCard label="In progress"  value={stats.inProgress} sub={stats.overdue > 0 ? `${stats.overdue} overdue` : "on track"} subDanger={stats.overdue > 0} />
+      <StatCard label="Completed"    value={stats.completed}  sub="this sprint" />
+      <StatCard label="Unassigned"   value={stats.unassigned} sub="needs owner" />
+    </div>
+  );
+}
+
+function StatCard({ label, value, sub, subDanger }: { label: string; value: number; sub: string; subDanger?: boolean }) {
+  return (
+    <div className="bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] p-[14px] md:p-[16px]">
+      <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mb-[8px]">{label}</div>
+      <div className="text-[18px] md:text-[20px] font-medium text-[#09090B] dark:text-[#FAFAFA] mb-[4px]">{value}</div>
+      <div className={`text-[11px] ${subDanger ? "text-[#92400E] dark:text-[#FBBF24]" : "text-[#A1A1AA]"}`}>{sub}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TaskRow — checkbox = done toggle, status badge = dropdown, click row = expand
+// ─────────────────────────────────────────────────────────────────────────────
+interface TaskRowProps {
+  task: Task;
+  isLast: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onToggleDone: () => void;
+  onChangeStatus: (s: TaskStatus) => void;
+  onSaveDescription: (description: string) => void;
+  onSaveTitle: (title: string) => void;
+  onChangePriority: (p: TaskPriority) => void;
+  onSaveDueDate: (date: string | null) => void;
+  onDelete: () => void;
+  members: WorkspaceMember[];
+  onAssignUser: (assignee: { user_id: string; full_name: string | null; avatar_url: string | null }) => void;
+  onUnassignUser: (userId: string) => void;
+}
+
+export function TaskRow({
+  task, isLast, isExpanded,
+  onToggleExpand, onToggleDone, onChangeStatus, onSaveDescription,
+  onSaveTitle, onChangePriority, onSaveDueDate, onDelete, members, onAssignUser, onUnassignUser,
+}: TaskRowProps) {
+  const isDone = task.status === "done";
+  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !isDone;
+
+  return (
+    <>
+      {/* Main row */}
+      <div
+        onClick={onToggleExpand}
+        className={`flex items-center px-[16px] min-h-[44px] md:min-h-[40px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 cursor-pointer group ${
+          !isLast || isExpanded ? "border-b border-[#E4E4E7] dark:border-[#27272A]" : ""
+        }`}
+      >
+        {/* Checkbox — toggles done only */}
+        <div
+          role="checkbox"
+          aria-checked={isDone}
+          aria-label={isDone ? "Mark as todo" : "Mark as done"}
+          onClick={(e) => { e.stopPropagation(); onToggleDone(); }}
+          className={`w-[16px] h-[16px] rounded-[4px] mr-[12px] shrink-0 flex items-center justify-center cursor-pointer transition-colors duration-100 ${
+            isDone
+              ? "bg-[#09090B] dark:bg-[#FAFAFA]"
+              : "border border-[#A1A1AA] dark:border-[#52525B] hover:border-[#09090B] dark:hover:border-[#FAFAFA]"
+          }`}
+        >
+          {isDone && <span className="text-white dark:text-[#09090B]">{Icon.check}</span>}
+        </div>
+
+        {/* Title */}
+        <div className={`flex-1 text-[13px] text-[#09090B] dark:text-[#FAFAFA] truncate mr-[12px] ${isDone ? "line-through opacity-50" : ""}`}>
+          {task.title}
+        </div>
+
+        {/* Meta — always visible on mobile, hover-reveal on desktop */}
+        <div className="flex items-center gap-[8px] md:gap-[10px] md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-100">
+          {/* Priority */}
+          <div className="hidden sm:block" onClick={(e) => e.stopPropagation()}>
+            <PriorityDropdown current={task.priority} onChange={onChangePriority} />
+          </div>
+
+          {/* Status — clickable dropdown (stop propagation so row expand doesn't fire) */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <StatusDropdown current={task.status} onChange={onChangeStatus} />
+          </div>
+
+          {/* Assignees */}
+          {task.assignees.length > 0 && (
+            <div className="hidden sm:flex items-center">
+              {task.assignees.slice(0, 3).map((a, i) => (
+                <div
+                  key={a.user_id}
+                  title={a.full_name ?? "Unknown"}
+                  className={`w-[20px] h-[20px] rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} text-[9px] font-medium flex items-center justify-center border-[1.5px] border-white dark:border-[#0A0A0A] -ml-[5px] first:ml-0`}
+                >
+                  {initials(a.full_name)}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Due date */}
+          {task.due_date && (
+            <span className={`hidden sm:inline text-[11px] w-[44px] text-right ${isOverdue ? "text-[#991B1B] dark:text-[#F87171]" : "text-[#A1A1AA]"}`}>
+              {new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </span>
+          )}
+
+          {/* Expand chevron */}
+          <span className={`text-[#A1A1AA] transition-transform duration-150 ${isExpanded ? "rotate-180" : ""}`}>
+            {Icon.chevronDown}
+          </span>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <ExpandedTaskPanel
+          task={task} isLast={isLast} isOverdue={!!isOverdue}
+          onSaveDescription={onSaveDescription} onSaveTitle={onSaveTitle}
+          onChangePriority={onChangePriority} onSaveDueDate={onSaveDueDate}
+          onDelete={onDelete} members={members}
+          onAssignUser={onAssignUser} onUnassignUser={onUnassignUser}
+        />
+      )}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ExpandedTaskPanel
+// ─────────────────────────────────────────────────────────────────────────────
+function ExpandedTaskPanel({
+  task, isLast, isOverdue,
+  onSaveDescription, onSaveTitle, onChangePriority, onSaveDueDate,
+  onDelete, members, onAssignUser, onUnassignUser,
+}: {
+  task: Task; isLast: boolean; isOverdue: boolean;
+  onSaveDescription: (d: string) => void;
+  onSaveTitle: (t: string) => void;
+  onChangePriority: (p: TaskPriority) => void;
+  onSaveDueDate: (d: string | null) => void;
+  onDelete: () => void;
+  members: WorkspaceMember[];
+  onAssignUser: (a: { user_id: string; full_name: string | null; avatar_url: string | null }) => void;
+  onUnassignUser: (userId: string) => void;
+}) {
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(task.title);
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descDraft, setDescDraft] = useState(task.description ?? "");
+  const [showDateInput, setShowDateInput] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const assignRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setTitleDraft(task.title); }, [task.title]);
+  useEffect(() => { setDescDraft(task.description ?? ""); }, [task.description]);
+  useEffect(() => {
+    if (!assignOpen) return;
+    const h = (e: MouseEvent) => { if (assignRef.current && !assignRef.current.contains(e.target as Node)) setAssignOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [assignOpen]);
+
+  const assignedIds = new Set(task.assignees.map((a) => a.user_id));
+  const unassignedMembers = members.filter((m) => !assignedIds.has(m.user_id));
+
+  return (
+    <div className={`px-[16px] sm:px-[44px] py-[14px] bg-[#FAFAFA] dark:bg-[#09090B] flex flex-col gap-[10px] ${
+      !isLast ? "border-b border-[#E4E4E7] dark:border-[#27272A]" : ""
+    }`}>
+
+      {/* Editable title */}
+      {editingTitle ? (
+        <input
+          autoFocus value={titleDraft}
+          onChange={(e) => setTitleDraft(e.target.value)}
+          onBlur={() => { setEditingTitle(false); if (titleDraft.trim() && titleDraft !== task.title) onSaveTitle(titleDraft.trim()); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { setEditingTitle(false); if (titleDraft.trim() && titleDraft !== task.title) onSaveTitle(titleDraft.trim()); }
+            if (e.key === "Escape") { setEditingTitle(false); setTitleDraft(task.title); }
+          }}
+          className="w-full text-[14px] font-medium text-[#09090B] dark:text-[#FAFAFA] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[6px] px-[10px] py-[6px] outline-none focus:border-[#09090B] dark:focus:border-[#FAFAFA]"
+        />
+      ) : (
+        <p onClick={() => setEditingTitle(true)}
+          className="text-[14px] font-medium cursor-text rounded-[4px] px-[4px] py-[2px] -mx-[4px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors"
+          title="Click to edit title">
+          {task.title}
+        </p>
+      )}
+
+      {/* Editable description */}
+      {editingDesc ? (
+        <textarea autoFocus value={descDraft} rows={3}
+          onChange={(e) => setDescDraft(e.target.value)}
+          onBlur={() => { setEditingDesc(false); if (descDraft !== (task.description ?? "")) onSaveDescription(descDraft); }}
+          onKeyDown={(e) => { if (e.key === "Escape") { setEditingDesc(false); setDescDraft(task.description ?? ""); } }}
+          placeholder="Add a description…"
+          className="w-full text-[13px] text-[#09090B] dark:text-[#FAFAFA] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[6px] px-[10px] py-[8px] outline-none focus:border-[#09090B] dark:focus:border-[#FAFAFA] resize-none leading-relaxed placeholder-[#A1A1AA]"
+        />
+      ) : (
+        <p onClick={() => setEditingDesc(true)}
+          className="text-[13px] leading-relaxed cursor-text rounded-[4px] px-[4px] py-[2px] -mx-[4px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors" title="Click to edit description">
+          {task.description
+            ? <span className="text-[#52525B] dark:text-[#A1A1AA]">{task.description}</span>
+            : <span className="text-[#A1A1AA] italic">No description — click to add one.</span>}
+        </p>
+      )}
+
+      {/* Priority + Due date row */}
+      <div className="flex items-center gap-[12px] flex-wrap">
+        <div className="flex items-center gap-[6px]">
+          <span className="text-[11px] text-[#A1A1AA]">Priority</span>
+          <PriorityDropdown current={task.priority} onChange={onChangePriority} />
+        </div>
+        <div className="flex items-center gap-[6px]">
+          <span className="text-[11px] text-[#A1A1AA]">Due</span>
+          {showDateInput ? (
+            <input type="date"
+              defaultValue={task.due_date ? task.due_date.split("T")[0] : ""}
+              autoFocus
+              onBlur={(e) => { setShowDateInput(false); onSaveDueDate(e.target.value || null); }}
+              onKeyDown={(e) => { if (e.key === "Escape") setShowDateInput(false); }}
+              className="text-[11px] text-[#09090B] dark:text-[#FAFAFA] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[4px] px-[6px] py-[2px] outline-none"
+            />
+          ) : (
+            <button onClick={() => setShowDateInput(true)}
+              className={`text-[11px] px-[6px] py-[2px] rounded-[4px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors ${
+                isOverdue ? "text-[#991B1B] dark:text-[#F87171]" : task.due_date ? "text-[#52525B] dark:text-[#A1A1AA]" : "text-[#A1A1AA] italic"
+              }`}>
+              {task.due_date
+                ? new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                : "Set date"}
+            </button>
+          )}
+          {task.due_date && !showDateInput && (
+            <button onClick={() => onSaveDueDate(null)} className="text-[10px] text-[#A1A1AA] hover:text-[#991B1B] dark:hover:text-[#F87171]" title="Clear due date">{Icon.x}</button>
+          )}
+        </div>
+      </div>
+
+      {/* Assignees */}
+      <div className="flex items-center gap-[6px] flex-wrap">
+        <span className="text-[11px] text-[#A1A1AA] shrink-0">Assigned</span>
+        {task.assignees.map((a, i) => (
+          <div key={a.user_id} className="flex items-center gap-[4px] group/av">
+            <div className={`w-[20px] h-[20px] rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} text-[9px] font-medium flex items-center justify-center`} title={a.full_name ?? "Unknown"}>
+              {initials(a.full_name)}
+            </div>
+            <span className="text-[11px] text-[#52525B] dark:text-[#A1A1AA] hidden sm:inline">{a.full_name ?? "?"}</span>
+            <button onClick={() => onUnassignUser(a.user_id)} className="text-[#A1A1AA] hover:text-[#991B1B] dark:hover:text-[#F87171] opacity-0 group/av:opacity-100 transition-opacity" title="Remove">{Icon.x}</button>
+          </div>
+        ))}
+        {task.assignees.length === 0 && <span className="text-[11px] text-[#A1A1AA] italic">No one</span>}
+        {/* Assign picker */}
+        <div ref={assignRef} className="relative">
+          <button onClick={() => setAssignOpen((v) => !v)}
+            className="w-[20px] h-[20px] rounded-full border border-dashed border-[#A1A1AA] dark:border-[#52525B] flex items-center justify-center text-[#A1A1AA] hover:border-[#09090B] dark:hover:border-[#FAFAFA] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors"
+            title="Assign member">
+            {Icon.plus}
+          </button>
+          {assignOpen && (
+            <div className="absolute left-0 top-[calc(100%+4px)] z-50 w-[180px] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] py-[4px] overflow-hidden">
+              {unassignedMembers.length === 0
+                ? <p className="text-[12px] text-[#A1A1AA] px-[10px] py-[8px] italic">All members assigned</p>
+                : unassignedMembers.map((m, i) => (
+                  <button key={m.user_id}
+                    onClick={() => { onAssignUser({ user_id: m.user_id, full_name: m.full_name, avatar_url: null }); setAssignOpen(false); }}
+                    className="w-full flex items-center gap-[8px] px-[10px] h-[36px] text-left hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors">
+                    <div className={`w-[20px] h-[20px] rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} text-[9px] font-medium flex items-center justify-center shrink-0`}>
+                      {initials(m.full_name)}
+                    </div>
+                    <span className="text-[12px] truncate">{m.full_name ?? "Unknown"}</span>
+                  </button>
+                ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer: created + delete */}
+      <div className="flex items-center justify-between mt-[2px]">
+        <span className="text-[11px] text-[#A1A1AA]">
+          Created {new Date(task.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+        </span>
+        {confirmDelete ? (
+          <div className="flex items-center gap-[6px]">
+            <span className="text-[11px] text-[#52525B] dark:text-[#A1A1AA]">Delete task?</span>
+            <button onClick={onDelete} className="text-[11px] font-medium text-[#991B1B] dark:text-[#F87171] hover:underline">Delete</button>
+            <button onClick={() => setConfirmDelete(false)} className="text-[11px] text-[#A1A1AA] hover:underline">Cancel</button>
+          </div>
+        ) : (
+          <button onClick={() => setConfirmDelete(true)}
+            className="text-[11px] text-[#A1A1AA] hover:text-[#991B1B] dark:hover:text-[#F87171] transition-colors">
+            Delete task
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// InlineTaskInput — title, then description before final save
+// ─────────────────────────────────────────────────────────────────────────────
+interface InlineTaskInputProps {
+  onSubmit: (title: string, description: string) => Promise<void>;
+  onCancel: () => void;
+}
+
+export function InlineTaskInput({ onSubmit, onCancel }: InlineTaskInputProps) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [phase, setPhase] = useState<"title" | "description">("title");
+  const [submitting, setSubmitting] = useState(false);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => { titleRef.current?.focus(); }, []);
+  useEffect(() => { if (phase === "description") descRef.current?.focus(); }, [phase]);
+
+  const handleTitleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && title.trim()) { e.preventDefault(); setPhase("description"); }
+    else if (e.key === "Escape") onCancel();
+  };
+
+  const handleDescKey = async (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      setSubmitting(true);
+      await onSubmit(title.trim(), description.trim());
+      setSubmitting(false);
+    } else if (e.key === "Escape") {
+      setPhase("title");
+      setDescription("");
+    }
+  };
+
+  return (
+    <div className="border-t border-[#E4E4E7] dark:border-[#27272A] bg-[#FAFAFA] dark:bg-[#09090B]">
+      {/* Title row */}
+      <div className="flex items-center px-[16px] h-[44px]">
+        <div className="w-[16px] h-[16px] rounded-[4px] border border-dashed border-[#A1A1AA] dark:border-[#52525B] mr-[12px] shrink-0" />
+        <input
+          ref={titleRef}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={handleTitleKey}
+          placeholder="Task name… (Enter for description, Esc to cancel)"
+          disabled={submitting || phase === "description"}
+          className="flex-1 text-[13px] text-[#09090B] dark:text-[#FAFAFA] bg-transparent outline-none placeholder-[#A1A1AA] disabled:opacity-60"
+        />
+      </div>
+      {/* Description row — shown after Enter on title */}
+      {phase === "description" && (
+        <div className="px-[44px] pb-[12px] flex flex-col gap-[6px]">
+          <textarea
+            ref={descRef}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onKeyDown={handleDescKey}
+            placeholder="Description (optional) — Enter to save, Esc to skip back"
+            rows={2}
+            disabled={submitting}
+            className="w-full text-[13px] text-[#09090B] dark:text-[#FAFAFA] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[6px] px-[10px] py-[8px] outline-none focus:border-[#09090B] dark:focus:border-[#FAFAFA] resize-none leading-relaxed placeholder-[#A1A1AA] disabled:opacity-60"
+          />
+          <div className="flex items-center gap-[8px]">
+            <button
+              onClick={async () => { setSubmitting(true); await onSubmit(title.trim(), description.trim()); setSubmitting(false); }}
+              disabled={submitting}
+              className="h-[28px] px-[12px] rounded-[6px] bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] text-[12px] font-medium hover:opacity-90 disabled:opacity-50"
+            >
+              {submitting ? "Saving…" : "Save task"}
+            </button>
+            <button onClick={onCancel} className="h-[28px] px-[10px] text-[12px] text-[#A1A1AA] hover:text-[#09090B] dark:hover:text-[#FAFAFA]">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// InlineModuleInput
+// ─────────────────────────────────────────────────────────────────────────────
+interface InlineModuleInputProps {
+  onSubmit: (name: string) => Promise<void>;
+  onCancel: () => void;
+}
+
+export function InlineModuleInput({ onSubmit, onCancel }: InlineModuleInputProps) {
+  const [value, setValue] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const handleKeyDown = async (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && value.trim()) {
+      setSubmitting(true);
+      await onSubmit(value.trim());
+      setSubmitting(false);
+    } else if (e.key === "Escape") onCancel();
+  };
+
+  return (
+    <div className="flex items-center gap-[10px] px-[16px] h-[44px] border border-dashed border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] bg-[#FAFAFA] dark:bg-[#09090B] mb-[16px]">
+      <span className="text-[#A1A1AA]">{Icon.module}</span>
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Module name… (Enter to save, Esc to cancel)"
+        disabled={submitting}
+        className="flex-1 text-[13px] text-[#09090B] dark:text-[#FAFAFA] bg-transparent outline-none placeholder-[#A1A1AA] disabled:opacity-60"
+      />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ModuleCard
+// ─────────────────────────────────────────────────────────────────────────────
+interface ModuleCardProps {
+  collection: Collection;
+  tasks: Task[];
+  expandedTaskId: string | null;
+  onToggleExpand: (id: string) => void;
+  onToggleDone: (id: string) => void;
+  onChangeStatus: (id: string, s: TaskStatus) => void;
+  onSaveDescription: (id: string, d: string) => void;
+  onSaveTitle: (id: string, title: string) => void;
+  onChangePriority: (id: string, p: TaskPriority) => void;
+  onSaveDueDate: (id: string, date: string | null) => void;
+  onDeleteTask: (id: string) => void;
+  members: WorkspaceMember[];
+  onAssignUser: (taskId: string, a: { user_id: string; full_name: string | null; avatar_url: string | null }) => void;
+  onUnassignUser: (taskId: string, userId: string) => void;
+  addingTaskInModule: string | null;
+  onStartAddTask: (collectionId: string) => void;
+  onSubmitTask: (title: string, description: string) => Promise<void>;
+  onCancelAddTask: () => void;
+  onRenameCollection: (name: string) => Promise<void>;
+  onDeleteCollection: () => Promise<void>;
+}
+
+export function ModuleCard({
+  collection, tasks, expandedTaskId,
+  onToggleExpand, onToggleDone, onChangeStatus, onSaveDescription,
+  onSaveTitle, onChangePriority, onSaveDueDate, onDeleteTask,
+  members, onAssignUser, onUnassignUser,
+  addingTaskInModule, onStartAddTask, onSubmitTask, onCancelAddTask,
+  onRenameCollection, onDeleteCollection,
+}: ModuleCardProps) {
+  const done = tasks.filter((t) => t.status === "done").length;
+  const total = tasks.length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const isAddingHere = addingTaskInModule === collection.id;
+
+  // Module rename state
+  const [renaming, setRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState(collection.name);
+  // 3-dot menu state
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setNameDraft(collection.name); }, [collection.name]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) { setMenuOpen(false); setConfirmDel(false); } };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [menuOpen]);
+
+  const commitRename = () => {
+    setRenaming(false);
+    if (nameDraft.trim() && nameDraft !== collection.name) onRenameCollection(nameDraft.trim());
+    else setNameDraft(collection.name);
+  };
+
+  return (
+    <div className="bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] mb-[20px] md:mb-[24px] overflow-visible">
+      {/* Header */}
+      <div className="bg-[#FAFAFA] dark:bg-[#09090B] px-[16px] py-[12px] border-b border-[#E4E4E7] dark:border-[#27272A] flex items-center justify-between rounded-t-[8px]">
+        <div className="flex items-center gap-[8px] min-w-0 flex-1 mr-[8px]">
+          <span className="text-[#09090B] dark:text-[#FAFAFA] shrink-0">{Icon.module}</span>
+          {renaming ? (
+            <input
+              autoFocus value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onBlur={commitRename}
+              onKeyDown={(e) => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") { setRenaming(false); setNameDraft(collection.name); } }}
+              className="flex-1 text-[13px] font-medium text-[#09090B] dark:text-[#FAFAFA] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[4px] px-[6px] py-[2px] outline-none focus:border-[#09090B] dark:focus:border-[#FAFAFA] min-w-0"
+            />
+          ) : (
+            <span className="text-[13px] font-medium truncate" onDoubleClick={() => setRenaming(true)} title="Double-click to rename">{collection.name}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-[8px] shrink-0">
+          <span className="text-[11px] text-[#A1A1AA]">{done} / {total}</span>
+          <div className="w-[48px] md:w-[64px] h-[3px] bg-[#E4E4E7] dark:bg-[#27272A] rounded-full overflow-hidden">
+            <div className="h-full bg-[#09090B] dark:bg-[#FAFAFA] rounded-full transition-all duration-500 ease-out" style={{ width: `${pct}%` }} />
+          </div>
+          <button onClick={() => onStartAddTask(collection.id)}
+            className="w-[24px] h-[24px] rounded-[4px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#27272A] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors duration-100"
+            title="Add task">
+            {Icon.plus}
+          </button>
+          {/* 3-dot menu */}
+          <div ref={menuRef} className="relative">
+            <button onClick={() => { setMenuOpen((v) => !v); setConfirmDel(false); }}
+              className="w-[24px] h-[24px] rounded-[4px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#27272A] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors text-[16px] leading-none"
+              title="Module options">···
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-[calc(100%+4px)] z-50 w-[160px] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] py-[4px] overflow-hidden">
+                {!confirmDel ? (
+                  <>
+                    <button onClick={() => { setRenaming(true); setMenuOpen(false); }}
+                      className="w-full flex items-center gap-[8px] px-[12px] h-[34px] text-left text-[13px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors">
+                      Rename
+                    </button>
+                    <button onClick={() => setConfirmDel(true)}
+                      className="w-full flex items-center gap-[8px] px-[12px] h-[34px] text-left text-[13px] text-[#991B1B] dark:text-[#F87171] hover:bg-[#FEF2F2] dark:hover:bg-[rgba(239,68,68,0.08)] transition-colors">
+                      Delete module
+                    </button>
+                  </>
+                ) : (
+                  <div className="px-[12px] py-[10px] flex flex-col gap-[8px]">
+                    <p className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">Delete <strong>{collection.name}</strong> and all its tasks?</p>
+                    <div className="flex gap-[6px]">
+                      <button onClick={() => { onDeleteCollection(); setMenuOpen(false); }}
+                        className="flex-1 h-[28px] rounded-[6px] bg-[#991B1B] text-white text-[12px] font-medium hover:opacity-90 transition-opacity">
+                        Delete
+                      </button>
+                      <button onClick={() => setConfirmDel(false)}
+                        className="flex-1 h-[28px] rounded-[6px] border border-[#E4E4E7] dark:border-[#27272A] text-[12px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Task rows */}
+      <div className="flex flex-col">
+        {tasks.map((task, i) => (
+          <TaskRow
+            key={task.id}
+            task={task}
+            isLast={i === tasks.length - 1 && !isAddingHere}
+            isExpanded={expandedTaskId === task.id}
+            onToggleExpand={() => onToggleExpand(task.id)}
+            onToggleDone={() => onToggleDone(task.id)}
+            onChangeStatus={(s) => onChangeStatus(task.id, s)}
+            onSaveDescription={(d) => onSaveDescription(task.id, d)}
+            onSaveTitle={(t) => onSaveTitle(task.id, t)}
+            onChangePriority={(p) => onChangePriority(task.id, p)}
+            onSaveDueDate={(d) => onSaveDueDate(task.id, d)}
+            onDelete={() => onDeleteTask(task.id)}
+            members={members}
+            onAssignUser={(a) => onAssignUser(task.id, a)}
+            onUnassignUser={(uid) => onUnassignUser(task.id, uid)}
+          />
+        ))}
+        {tasks.length === 0 && !isAddingHere && (
+          <div className="px-[16px] py-[14px] text-[12px] text-[#A1A1AA] italic">No tasks yet — click + to add one.</div>
+        )}
+        {isAddingHere && (
+          <InlineTaskInput onSubmit={onSubmitTask} onCancel={onCancelAddTask} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WelcomeState
+// ─────────────────────────────────────────────────────────────────────────────
+export function WelcomeState() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-[16px] text-center px-[32px]">
+      <div className="w-[56px] h-[56px] rounded-[14px] bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center text-[#A1A1AA] dark:text-[#52525B]">
+        {Icon.inbox}
+      </div>
+      <div>
+        <p className="text-[15px] font-medium mb-[6px]">Select a project</p>
+        <p className="text-[13px] text-[#A1A1AA] max-w-[260px] leading-relaxed">
+          Choose a project from the sidebar to view its tasks and modules.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EmptyModulesState
+// ─────────────────────────────────────────────────────────────────────────────
+export function EmptyModulesState({ onAddModule }: { onAddModule: () => void }) {
+  return (
+    <div className="bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[10px] p-[40px] md:p-[56px] flex flex-col items-center justify-center gap-[14px] text-center">
+      <div className="w-[48px] h-[48px] rounded-[12px] bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center text-[#A1A1AA] dark:text-[#52525B]">
+        {Icon.folder}
+      </div>
+      <div>
+        <p className="text-[14px] font-medium mb-[4px]">No modules yet</p>
+        <p className="text-[12px] text-[#A1A1AA]">Add a module to start organising tasks.</p>
+      </div>
+      <button
+        onClick={onAddModule}
+        className="mt-[4px] flex items-center gap-[7px] h-[34px] px-[16px] rounded-[8px] bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] text-[13px] font-medium hover:opacity-90 transition-opacity"
+      >
+        {Icon.plus} Add first module
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SkeletonModules
+// ─────────────────────────────────────────────────────────────────────────────
+export function SkeletonModules() {
+  return (
+    <>
+      {[1, 2].map((i) => (
+        <div key={i} className="bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] mb-[24px] overflow-hidden animate-pulse">
+          <div className="bg-[#FAFAFA] dark:bg-[#09090B] px-[16px] py-[12px] border-b border-[#E4E4E7] dark:border-[#27272A] flex items-center gap-[10px]">
+            <div className="w-[14px] h-[14px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+            <div className="w-[120px] h-[11px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+          </div>
+          {[1, 2, 3].map((j) => (
+            <div key={j} className="flex items-center px-[16px] h-[44px] gap-[12px] border-b border-[#E4E4E7] dark:border-[#27272A] last:border-0">
+              <div className="w-[16px] h-[16px] rounded-[4px] bg-[#E4E4E7] dark:bg-[#27272A] shrink-0" />
+              <div className="flex-1 h-[10px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+              <div className="w-[60px] h-[18px] rounded-[4px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RightPanel — desktop only (hidden on mobile)
+// ─────────────────────────────────────────────────────────────────────────────
+interface RightPanelProps {
+  members: WorkspaceMember[];
+  membersLoading: boolean;
+  progressPercent: number;
+  completedTasks: number;
+  totalTasks: number;
+}
+
+export function RightPanel({ members, membersLoading, progressPercent, completedTasks, totalTasks }: RightPanelProps) {
+  return (
+    <aside className="hidden lg:flex w-[220px] shrink-0 border-l border-[#E4E4E7] dark:border-[#27272A] bg-[#FFFFFF] dark:bg-[#09090B] flex-col p-[20px] transition-colors duration-150">
+      <div className="mb-[32px]">
+        <h3 className="text-[11px] font-medium text-[#A1A1AA] uppercase tracking-wider mb-[16px]">Team members</h3>
+        <div className="flex flex-col gap-[12px]">
+          {membersLoading && [1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-[10px] animate-pulse">
+              <div className="w-[24px] h-[24px] rounded-full bg-[#E4E4E7] dark:bg-[#27272A] shrink-0" />
+              <div className="flex-1 h-[10px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+            </div>
+          ))}
+          {!membersLoading && members.map((m, i) => (
+            <div key={m.user_id} className="flex items-center gap-[10px]">
+              <div className={`w-[24px] h-[24px] rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} text-[10px] font-medium flex items-center justify-center shrink-0`}>
+                {initials(m.full_name)}
+              </div>
+              <div className="text-[13px] truncate">{m.full_name ?? "Unknown"}</div>
+            </div>
+          ))}
+          {!membersLoading && members.length === 0 && (
+            <p className="text-[12px] text-[#A1A1AA] italic">No members yet.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-[32px]">
+        <h3 className="text-[11px] font-medium text-[#A1A1AA] uppercase tracking-wider mb-[12px]">Progress</h3>
+        <div className="text-[20px] font-medium mb-[8px]">{progressPercent}%</div>
+        <div className="w-full h-[3px] bg-[#E4E4E7] dark:bg-[#27272A] rounded-full overflow-hidden mb-[8px]">
+          <div className="h-full bg-[#09090B] dark:bg-[#FAFAFA] rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
+        </div>
+        <div className="text-[11px] text-[#A1A1AA]">
+          {totalTasks > 0 ? `${completedTasks} of ${totalTasks} tasks done` : "No tasks yet"}
+        </div>
+      </div>
+
+      <button className="w-full h-[32px] rounded-[6px] border border-[#E4E4E7] dark:border-[#27272A] text-[13px] font-medium hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100">
+        Invite member
+      </button>
+    </aside>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MobileSidebarDrawer — slides in on mobile
+// ─────────────────────────────────────────────────────────────────────────────
+interface MobileSidebarDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}
+
+export function MobileSidebarDrawer({ isOpen, onClose, children }: MobileSidebarDrawerProps) {
+  if (!isOpen) return null;
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+        onClick={onClose}
+      />
+      {/* Drawer */}
+      <div className="fixed inset-y-0 left-0 z-50 w-[260px] bg-[#FFFFFF] dark:bg-[#09090B] border-r border-[#E4E4E7] dark:border-[#27272A] flex flex-col lg:hidden shadow-[4px_0_24px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)]"
+        style={{ animation: "slideInLeft 0.2s ease-out" }}
+      >
+        <div className="flex items-center justify-between px-[20px] py-[16px] border-b border-[#E4E4E7] dark:border-[#27272A]">
+          <span className="text-[14px] font-medium">Menu</span>
+          <button onClick={onClose} className="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B]">
+            {Icon.x}
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">{children}</div>
+      </div>
+      <style>{`
+        @keyframes slideInLeft {
+          from { transform: translateX(-100%); }
+          to   { transform: translateX(0); }
+        }
+      `}</style>
+    </>
+  );
+}
