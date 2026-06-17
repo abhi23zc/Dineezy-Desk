@@ -40,11 +40,11 @@ export const metadata: Metadata = {
   creator: "Dineezy",
   publisher: "Dineezy",
   robots: {
-    index: false, // App is behind auth — tell crawlers not to index
-    follow: false,
+    index: true,
+    follow: true,
     googleBot: {
-      index: false,
-      follow: false,
+      index: true,
+      follow: true,
     },
   },
   icons: {
