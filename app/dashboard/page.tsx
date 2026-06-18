@@ -50,7 +50,6 @@ const icons = {
 // Dashboard page
 // ─────────────────────────────────────────────────────────────────────────────
 
-
 export default function Dashboard() {
   const router = useRouter();
 
@@ -64,8 +63,6 @@ export default function Dashboard() {
         setCurrentUserId(session.user.id);
         setCurrentUserName(session.user.user_metadata?.full_name || session.user.user_metadata?.name || null);
       }
-
-
     });
   }, [router]);
 
@@ -73,8 +70,6 @@ export default function Dashboard() {
     await superbase.auth.signOut();
     router.replace("/login");
   };
-
-
 
   // ── Workspace data ────────────────────────────────────────────────────────
   const {
@@ -126,13 +121,6 @@ export default function Dashboard() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-
-  // ── "Add task" topbar button: target the first collection by default ───────
-  const handleTopbarAddTask = useCallback(() => {
-    if (!activeProject || collections.length === 0) return;
-    setAddingTaskInModule(collections[0].id);
-  }, [activeProject, collections]);
-
 
   useEffect(() => {
     setActiveProject(projects?.[0] || null)
@@ -186,8 +174,8 @@ export default function Dashboard() {
   }, [activeProject, collections.length, addCollection]);
 
   // ── Workspace created callback ────────────────────────────────────────────
-  const handleWorkspaceCreated = useCallback((ws: Workspace) => {
-    addWorkspace({ ...ws, member_count: 1 });
+  const handleWorkspaceCreated = useCallback((workspace: Workspace) => {
+    addWorkspace({ ...workspace, member_count: 1 });
     setCreateWorkspaceOpen(false);
     setWsOpen(false);
   }, [addWorkspace]);
@@ -223,10 +211,10 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-[#FAFAFA] dark:bg-[#000000] font-sans text-[#09090B] dark:text-[#FAFAFA] transition-colors duration-150">
+    <div className="flex h-screen w-full bg-bg-page text-foreground font-sans transition-colors duration-100">
 
       {/* ── Sidebar (desktop only) ──────────────────────────────────────── */}
-      <aside className="hidden lg:flex w-[220px] shrink-0 border-r border-[#E4E4E7] dark:border-[#27272A] bg-[#FFFFFF] dark:bg-[#09090B] flex-col transition-colors duration-150">
+      <aside className="hidden lg:flex w-[220px] shrink-0 border-r border-border-custom bg-bg-panel flex-col transition-colors duration-100">
         {/* Logo */}
         <div className="flex items-center gap-[10px] px-[20px] py-[20px]">
           <img
@@ -234,7 +222,7 @@ export default function Dashboard() {
             alt="Dineezy Logo"
             className="w-[24px] h-[24px] object-contain rounded-[6px] dark:invert"
           />
-          <span className="text-[14px] font-semibold tracking-tight text-[#09090B] dark:text-[#FAFAFA]">Dineezy Desk</span>
+          <span className="text-[14px] font-semibold tracking-tight text-foreground">Dineezy Desk</span>
         </div>
         <SidebarContent
           icons={icons}
@@ -268,7 +256,7 @@ export default function Dashboard() {
       <div className="flex flex-col flex-1 min-w-0">
 
         {/* Topbar */}
-        <header className="h-[56px] border-b border-[#E4E4E7] dark:border-[#27272A] bg-[#FFFFFF] dark:bg-[#09090B] flex items-center justify-between px-[16px] md:px-[24px] shrink-0 z-20 overflow-visible transition-colors duration-150">
+        <header className="h-[56px] border-b border-border-custom bg-bg-panel flex items-center justify-between px-[16px] md:px-[24px] shrink-0 z-20 overflow-visible transition-colors duration-100">
 
           {/* Left: hamburger (mobile) + workspace switcher + breadcrumb */}
           <div className="flex items-center gap-[8px] text-[13px] min-w-0">
@@ -276,7 +264,7 @@ export default function Dashboard() {
             {/* Hamburger — mobile only */}
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden w-[32px] h-[32px] flex items-center justify-center rounded-[6px] text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] shrink-0"
+              className="lg:hidden w-[32px] h-[32px] flex items-center justify-center rounded-[6px] text-text-secondary hover:bg-bg-raised shrink-0 transition-colors duration-75"
               aria-label="Open menu"
             >
               {Icon.menu}
@@ -287,26 +275,26 @@ export default function Dashboard() {
               {/* Trigger button */}
               {wsLoading ? (
                 <div className="flex items-center gap-[8px] h-[32px] px-[10px] rounded-[6px] animate-pulse">
-                  <div className="w-[18px] h-[18px] rounded-[4px] bg-[#E4E4E7] dark:bg-[#27272A]" />
-                  <div className="w-[90px] h-[12px] rounded-[4px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+                  <div className="w-[18px] h-[18px] rounded-[4px] bg-border-custom" />
+                  <div className="w-[90px] h-[12px] rounded-[4px] bg-border-custom" />
                 </div>
               ) : (
                 <button
                   onClick={() => setWsOpen((v) => !v)}
-                  className="flex items-center gap-[8px] h-[32px] px-[10px] rounded-[6px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 select-none"
+                  className="flex items-center gap-[8px] h-[32px] px-[10px] rounded-[6px] hover:bg-bg-raised text-foreground transition-colors duration-75 select-none"
                 >
                   {activeWorkspace ? (
                     <>
                       <span className="text-[16px] leading-none">{activeWorkspace.emoji}</span>
-                      <span className="font-medium text-[13px] max-w-[140px] truncate">{activeWorkspace.name}</span>
+                      <span className="font-semibold text-[13px] max-w-[140px] truncate">{activeWorkspace.name}</span>
                     </>
                   ) : (
                     <>
                       <span className="text-[16px] leading-none">🏢</span>
-                      <span className="font-medium text-[13px] text-[#A1A1AA]">Select workspace</span>
+                      <span className="font-semibold text-[13px] text-text-muted">Select workspace</span>
                     </>
                   )}
-                  <span className={`transition-transform duration-200 ${wsOpen ? "rotate-180" : ""}`}>
+                  <span className={`transition-transform duration-100 ${wsOpen ? "rotate-180" : ""}`}>
                     {icons.chevronDown}
                   </span>
                 </button>
@@ -314,18 +302,18 @@ export default function Dashboard() {
 
               {/* Workspace dropdown */}
               {wsOpen && (
-                <div className="absolute top-[calc(100%+8px)] left-0 w-[260px] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.4)] z-50 overflow-hidden">
-                  <div className="px-[12px] py-[10px] border-b border-[#E4E4E7] dark:border-[#27272A]">
-                    <p className="text-[11px] font-medium text-[#A1A1AA] uppercase tracking-wider">Workspaces</p>
+                <div className="absolute top-[calc(100%+8px)] left-0 w-[260px] bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-border-custom rounded-[10px] z-50 overflow-hidden shadow-md animate-slide-down-in">
+                  <div className="px-[12px] py-[10px] border-b border-border-custom">
+                    <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Workspaces</p>
                   </div>
 
                   {/* Loading */}
                   {wsLoading && [1, 2].map((i) => (
                     <div key={i} className="flex items-center gap-[10px] px-[12px] h-[42px] animate-pulse">
-                      <div className="w-[28px] h-[28px] rounded-[6px] bg-[#E4E4E7] dark:bg-[#27272A] shrink-0" />
+                      <div className="w-[28px] h-[28px] rounded-[6px] bg-border-custom shrink-0" />
                       <div className="flex flex-col gap-[4px] flex-1">
-                        <div className="w-[100px] h-[10px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
-                        <div className="w-[60px] h-[8px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+                        <div className="w-[100px] h-[10px] rounded-[3px] bg-border-custom" />
+                        <div className="w-[60px] h-[8px] rounded-[3px] bg-border-custom" />
                       </div>
                     </div>
                   ))}
@@ -333,11 +321,11 @@ export default function Dashboard() {
                   {/* Error */}
                   {!wsLoading && wsError && (
                     <div className="px-[12px] py-[14px] flex items-start gap-[8px]">
-                      <svg className="shrink-0 mt-[1px] text-[#991B1B] dark:text-[#F87171]" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg className="shrink-0 mt-[1px] text-[#b91c1c] dark:text-[#F87171]" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                       </svg>
                       <div className="flex flex-col gap-[6px]">
-                        <p className="text-[12px] text-[#52525B] dark:text-[#A1A1AA]">Failed to load workspaces.</p>
+                        <p className="text-[12px] text-text-secondary">Failed to load workspaces.</p>
                         <button onClick={refetchWorkspaces} className="text-[12px] font-medium underline underline-offset-2 text-left">Try again</button>
                       </div>
                     </div>
@@ -346,12 +334,12 @@ export default function Dashboard() {
                   {/* Empty */}
                   {!wsLoading && !wsError && workspaces.length === 0 && (
                     <div className="px-[12px] py-[20px] flex flex-col items-center gap-[10px] text-center">
-                      <div className="w-[36px] h-[36px] rounded-[8px] bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center text-[18px]">🏢</div>
+                      <div className="w-[36px] h-[36px] rounded-[8px] bg-bg-raised flex items-center justify-center text-[18px]">🏢</div>
                       <div>
-                        <p className="text-[13px] font-medium">No workspaces yet</p>
-                        <p className="text-[11px] text-[#A1A1AA] mt-[2px]">Create one to get started</p>
+                        <p className="text-[13px] font-semibold">No workspaces yet</p>
+                        <p className="text-[11px] text-text-muted mt-[2px]">Create one to get started</p>
                       </div>
-                      <button onClick={() => { setWsOpen(false); setCreateWorkspaceOpen(true); }} className="h-[30px] px-[14px] rounded-[6px] bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] text-[12px] font-medium hover:opacity-90 transition-opacity">Create Workspace</button>
+                      <button onClick={() => { setWsOpen(false); setCreateWorkspaceOpen(true); }} className="h-[30px] px-[14px] rounded-[6px] bg-foreground text-background text-[12px] font-semibold hover:opacity-90 transition-all active:scale-[0.97] cursor-pointer">Create Workspace</button>
                     </div>
                   )}
 
@@ -359,23 +347,23 @@ export default function Dashboard() {
                   {!wsLoading && !wsError && workspaces.length > 0 && (
                     <div className="py-[6px]">
                       {workspaces.map((ws) => (
-                        <div key={ws.id} className={`w-full flex items-center gap-[10px] px-[12px] h-[42px] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100 ${activeWorkspace?.id === ws.id ? "bg-[#F4F4F5] dark:bg-[#18181B]" : ""}`}>
+                        <div key={ws.id} className={`w-full flex items-center gap-[10px] px-[12px] h-[42px] hover:bg-bg-raised transition-colors duration-100 ${activeWorkspace?.id === ws.id ? "bg-bg-raised text-foreground" : "text-text-secondary"}`}>
                           <button
                             onClick={() => { handleSetActiveWorkspace(ws); setWsOpen(false); }}
                             className="flex items-center gap-[10px] flex-1 min-w-0 h-full text-left"
                           >
-                            <span className="w-[28px] h-[28px] rounded-[6px] bg-[#F4F4F5] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#27272A] flex items-center justify-center text-[14px] shrink-0">
+                            <span className="w-[28px] h-[28px] rounded-[6px] bg-bg-raised border border-border-custom flex items-center justify-center text-[14px] shrink-0">
                               {ws.emoji}
                             </span>
                             <div className="flex flex-col flex-1 min-w-0">
-                              <span className="text-[13px] font-medium truncate">{ws.name}</span>
-                              <span className="text-[11px] text-[#A1A1AA]">{ws.member_count} member{ws.member_count !== 1 ? "s" : ""}</span>
+                              <span className="text-[13px] font-semibold truncate">{ws.name}</span>
+                              <span className="text-[11px] font-medium text-text-muted">{ws.member_count} member{ws.member_count !== 1 ? "s" : ""}</span>
                             </div>
                           </button>
                           {activeWorkspace?.id === ws.id && (
                             <button
                               onClick={(e) => { e.stopPropagation(); setWsOpen(false); setWsSettingsOpen(true); }}
-                              className="w-[26px] h-[26px] rounded-[5px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#27272A] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors shrink-0"
+                              className="w-[26px] h-[26px] rounded-[5px] flex items-center justify-center text-text-muted hover:bg-bg-raised hover:text-foreground transition-all duration-100 shrink-0 active:scale-90"
                               title="Workspace settings"
                             >
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
@@ -390,16 +378,16 @@ export default function Dashboard() {
                   {/* Create button */}
                   {!wsLoading && workspaces.length > 0 && (
                     <>
-                      <div className="border-t border-[#E4E4E7] dark:border-[#27272A]" />
+                      <div className="border-t border-border-custom" />
                       <div className="py-[6px]">
                         <button
                           onClick={() => { setWsOpen(false); setCreateWorkspaceOpen(true); }}
-                          className="w-full flex items-center gap-[10px] px-[12px] h-[38px] text-left hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100"
+                          className="w-full flex items-center gap-[10px] px-[12px] h-[38px] text-left hover:bg-bg-raised transition-colors duration-75"
                         >
-                          <span className="w-[28px] h-[28px] rounded-[6px] border border-dashed border-[#A1A1AA] dark:border-[#52525B] flex items-center justify-center shrink-0">
+                          <span className="w-[28px] h-[28px] rounded-[6px] border border-dashed border-border-custom flex items-center justify-center shrink-0">
                             {Icon.plus}
                           </span>
-                          <span className="text-[13px] font-medium text-[#52525B] dark:text-[#A1A1AA]">Create Workspace</span>
+                          <span className="text-[13px] font-semibold text-text-secondary">Create Workspace</span>
                         </button>
                       </div>
                     </>
@@ -411,10 +399,10 @@ export default function Dashboard() {
             {/* Breadcrumb: shows active project name */}
             {activeProject && (
               <>
-                <span className="text-[#D4D4D8] dark:text-[#3F3F46]">/</span>
-                <div className="flex items-center gap-[6px] text-[#52525B] dark:text-[#A1A1AA] max-w-[70px] sm:max-w-[200px] truncate">
+                <span className="text-border-custom">/</span>
+                <div className="flex items-center gap-[6px] text-text-secondary max-w-[70px] sm:max-w-[200px] truncate">
                   <span className="text-[15px] leading-none shrink-0">{activeProject.emoji}</span>
-                  <span className="text-[13px] font-medium truncate">{activeProject.name}</span>
+                  <span className="text-[13px] font-semibold truncate">{activeProject.name}</span>
                 </div>
               </>
             )}
@@ -426,7 +414,7 @@ export default function Dashboard() {
 
             <button
               onClick={handleSignOut}
-              className="flex items-center justify-center gap-[6px] h-[32px] w-[32px] md:w-auto md:px-[12px] rounded-[6px] text-[#991B1B] dark:text-[#F87171] text-[13px] font-medium border border-[#FECACA] dark:border-[rgba(239,68,68,0.3)] hover:bg-[#FEF2F2] dark:hover:bg-[rgba(239,68,68,0.08)] transition-colors duration-100"
+              className="flex items-center justify-center gap-[6px] h-[32px] w-[32px] md:w-auto md:px-[12px] rounded-[6px] text-[#b91c1c] dark:text-[#F87171] text-[13px] font-semibold border border-red-200 dark:border-red-500/20 hover:bg-red-500/5 transition-all duration-75 active:scale-[0.97] cursor-pointer"
               title="Sign out"
             >
               {icons.signout} <span className="hidden md:inline">Sign out</span>
@@ -449,24 +437,24 @@ export default function Dashboard() {
                 <div className="flex items-center gap-[12px] mb-[8px] flex-wrap">
                   <span className="text-[28px] leading-none shrink-0">{activeProject.emoji}</span>
                   <h1 className="text-[20px] font-semibold truncate">{activeProject.name}</h1>
-                  <span className={`text-[11px] font-medium px-[8px] py-[3px] rounded-[5px] shrink-0 ${activeProject.status === "active"
-                    ? "bg-[#DCFCE7] dark:bg-[rgba(34,197,94,0.15)] text-[#15803D] dark:text-[#4ADE80]"
+                  <span className={`text-[11px] font-semibold px-[8px] py-[3px] rounded-[5px] shrink-0 border ${activeProject.status === "active"
+                    ? "bg-[#DCFCE7] dark:bg-[rgba(34,197,94,0.1)] text-[#15803D] dark:text-[#4ADE80] border-green-200/50 dark:border-green-500/15"
                     : activeProject.status === "completed"
-                      ? "bg-[#DBEAFE] dark:bg-[rgba(59,130,246,0.15)] text-[#1D4ED8] dark:text-[#60A5FA]"
-                      : "bg-[#F4F4F5] dark:bg-[#18181B] text-[#52525B] dark:text-[#A1A1AA]"
+                      ? "bg-[#DBEAFE] dark:bg-[rgba(59,130,246,0.1)] text-[#1D4ED8] dark:text-[#60A5FA] border-blue-200/50 dark:border-blue-500/15"
+                      : "bg-bg-raised text-text-secondary border-border-custom"
                     }`}>
                     {activeProject.status.charAt(0).toUpperCase() + activeProject.status.slice(1)}
                   </span>
                 </div>
                 {activeProject.description && (
-                  <p className="text-[13px] text-[#52525B] dark:text-[#A1A1AA] max-w-[600px] leading-relaxed">
+                  <p className="text-[13px] text-text-secondary max-w-[600px] leading-relaxed">
                     {activeProject.description}
                   </p>
                 )}
               </div>
               <button
                 onClick={() => setProjSettingsOpen(true)}
-                className="w-[32px] h-[32px] rounded-[6px] border border-[#E4E4E7] dark:border-[#27272A] flex items-center justify-center text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors shrink-0"
+                className="w-[32px] h-[32px] rounded-[6px] border border-border-custom flex items-center justify-center text-text-secondary hover:bg-bg-raised hover:text-foreground transition-all duration-75 shrink-0 active:scale-95"
                 title="Project settings"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -482,10 +470,10 @@ export default function Dashboard() {
                 {/* Stats skeleton */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-[12px] md:gap-[16px] mb-[24px] md:mb-[32px]">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-[#FFFFFF] dark:bg-[#0A0A0A] border border-[#E4E4E7] dark:border-[#27272A] rounded-[8px] p-[16px] animate-pulse">
-                      <div className="w-[70px] h-[10px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A] mb-[12px]" />
-                      <div className="w-[32px] h-[20px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A] mb-[8px]" />
-                      <div className="w-[80px] h-[9px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+                    <div key={i} className="bg-bg-card border border-border-custom rounded-[8px] p-[16px] animate-pulse">
+                      <div className="w-[70px] h-[10px] rounded-[3px] bg-border-custom mb-[12px]" />
+                      <div className="w-[32px] h-[20px] rounded-[3px] bg-border-custom mb-[8px]" />
+                      <div className="w-[80px] h-[9px] rounded-[3px] bg-border-custom" />
                     </div>
                   ))}
                 </div>
@@ -501,8 +489,8 @@ export default function Dashboard() {
 
                 {/* Modules header */}
                 <div className="flex items-center gap-[8px] mb-[16px]">
-                  <h2 className="text-[14px] font-medium">Modules</h2>
-                  <span className="bg-[#F4F4F5] dark:bg-[#18181B] text-[#52525B] dark:text-[#A1A1AA] text-[11px] px-[6px] py-[2px] rounded-[4px] font-medium">
+                  <h2 className="text-[14px] font-semibold">Modules</h2>
+                  <span className="bg-bg-raised text-text-secondary text-[11px] px-[6.5px] py-[2px] rounded-[4px] font-semibold border border-border-custom">
                     {collections.length}
                   </span>
                 </div>
@@ -546,11 +534,11 @@ export default function Dashboard() {
               />
             )}
 
-            {/* Add module button (shown when at least 1 module exists and not currently adding) */}
+            {/* Add module button */}
             {!isContentLoading && collections.length > 0 && !addingModule && (
               <button
                 onClick={() => setAddingModule(true)}
-                className="flex items-center gap-[8px] h-[36px] px-[12px] rounded-[6px] text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors duration-100 text-[13px]"
+                className="flex items-center gap-[8px] h-[36px] px-[12px] rounded-[6px] text-text-muted hover:bg-bg-raised hover:text-foreground transition-all duration-75 text-[13px] active:scale-[0.98] cursor-pointer"
               >
                 {Icon.plus} Add module
               </button>
@@ -637,14 +625,14 @@ function SidebarContent({ icons, activeWorkspace, projects, projLoading, projErr
     <div className="flex flex-col gap-[24px] px-[12px] py-[8px]">
       {/* Navigation */}
       <div className="flex flex-col">
-        <h3 className="text-[11px] font-medium text-[#A1A1AA] uppercase tracking-wider mb-[8px] pl-[8px]">Navigation</h3>
+        <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-[8px] pl-[8px]">Navigation</h3>
         <div className="flex flex-col gap-[2px]">
-          <a href="#" className="flex items-center gap-[10px] h-[40px] px-[8px] rounded-[6px] bg-[#F4F4F5] dark:bg-[#18181B] font-medium transition-colors duration-100">
+          <a href="#" className="flex items-center gap-[10px] h-[40px] px-[8px] rounded-[6px] bg-bg-raised text-foreground font-semibold transition-colors duration-100">
             <span>{icons.dashboard}</span>
             <span className="text-[13px]">Dashboard</span>
           </a>
           {(["My tasks", "Analytics", "Team"] as const).map((label, i) => (
-            <a key={label} href="#" className="flex items-center gap-[10px] h-[40px] px-[8px] rounded-[6px] text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors duration-100">
+            <a key={label} href="#" className="flex items-center gap-[10px] h-[40px] px-[8px] rounded-[6px] text-text-secondary hover:bg-bg-raised hover:text-foreground transition-colors duration-100">
               <span className="opacity-70">{[icons.checkbox, icons.chart, icons.users][i]}</span>
               <span className="text-[13px]">{label}</span>
             </a>
@@ -655,27 +643,27 @@ function SidebarContent({ icons, activeWorkspace, projects, projLoading, projErr
       {/* Projects */}
       <div className="flex flex-col">
         <div className="flex items-center justify-between mb-[8px] pl-[8px] pr-[4px]">
-          <h3 className="text-[11px] font-medium text-[#A1A1AA] uppercase tracking-wider">Projects</h3>
+          <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Projects</h3>
           {!projLoading && activeWorkspace && (
-            <span className="text-[11px] text-[#A1A1AA] bg-[#F4F4F5] dark:bg-[#18181B] px-[5px] py-[1px] rounded-[3px]">{projects.length}</span>
+            <span className="text-[11px] font-semibold text-text-muted bg-bg-raised px-[5px] py-[1px] rounded-[3px] border border-border-custom">{projects.length}</span>
           )}
         </div>
         <div className="flex flex-col gap-[2px]">
           {projLoading && [1, 2].map((i) => (
             <div key={i} className="flex items-center gap-[8px] h-[40px] px-[8px] animate-pulse">
-              <div className="w-[14px] h-[14px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A] shrink-0" />
-              <div className="flex-1 h-[10px] rounded-[3px] bg-[#E4E4E7] dark:bg-[#27272A]" />
+              <div className="w-[14px] h-[14px] rounded-[3px] bg-border-custom shrink-0" />
+              <div className="flex-1 h-[10px] rounded-[3px] bg-border-custom" />
             </div>
           ))}
-          {!projLoading && projError && <p className="text-[11px] text-[#991B1B] dark:text-[#F87171] px-[8px] py-[4px]">Failed to load projects.</p>}
-          {!projLoading && !projError && !activeWorkspace && <p className="text-[11px] text-[#A1A1AA] px-[8px] py-[4px] italic">Select a workspace first.</p>}
-          {!projLoading && !projError && activeWorkspace && projects.length === 0 && <p className="text-[11px] text-[#A1A1AA] px-[8px] py-[4px] italic">No projects yet.</p>}
+          {!projLoading && projError && <p className="text-[11px] font-medium text-[#b91c1c] dark:text-[#F87171] px-[8px] py-[4px]">Failed to load projects.</p>}
+          {!projLoading && !projError && !activeWorkspace && <p className="text-[11px] text-text-muted px-[8px] py-[4px] italic">Select a workspace first.</p>}
+          {!projLoading && !projError && activeWorkspace && projects.length === 0 && <p className="text-[11px] text-text-muted px-[8px] py-[4px] italic">No projects yet.</p>}
           {!projLoading && !projError && projects.map((project) => (
             <div
               key={project.id}
               className={`w-full flex items-center gap-[8px] h-[40px] px-[8px] rounded-[6px] transition-colors duration-100 group ${activeProject?.id === project.id
-                ? "bg-[#F4F4F5] dark:bg-[#18181B] text-[#09090B] dark:text-[#FAFAFA]"
-                : "text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA]"
+                ? "bg-bg-raised text-foreground font-semibold"
+                : "text-text-secondary hover:bg-bg-raised hover:text-foreground"
                 }`}
             >
               <button onClick={() => onSelectProject(project)} className="flex items-center gap-[8px] flex-1 min-w-0 h-full text-left">
@@ -685,7 +673,7 @@ function SidebarContent({ icons, activeWorkspace, projects, projLoading, projErr
               {project.color && <span className="w-[6px] h-[6px] rounded-full shrink-0 opacity-60 group-hover:opacity-0" style={{ backgroundColor: project.color }} />}
               <button
                 onClick={(e) => { e.stopPropagation(); onProjectSettings(project); }}
-                className="w-[22px] h-[22px] rounded-[4px] flex items-center justify-center text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#27272A] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-all opacity-0 group-hover:opacity-100 shrink-0"
+                className="w-[22px] h-[22px] rounded-[4px] flex items-center justify-center text-text-muted hover:bg-border-custom hover:text-foreground transition-all opacity-0 group-hover:opacity-100 shrink-0 active:scale-90"
                 title="Project settings"
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>
@@ -695,7 +683,7 @@ function SidebarContent({ icons, activeWorkspace, projects, projLoading, projErr
           <button
             onClick={onNewProject}
             disabled={!activeWorkspace}
-            className="flex items-center gap-[8px] h-[36px] px-[8px] rounded-[6px] text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:text-[#09090B] dark:hover:text-[#FAFAFA] transition-colors duration-100 mt-[2px] disabled:opacity-40 disabled:cursor-not-allowed w-full text-left"
+            className="flex items-center gap-[8px] h-[36px] px-[8px] rounded-[6px] text-text-muted hover:bg-bg-raised hover:text-foreground transition-all duration-75 mt-[2px] disabled:opacity-40 disabled:cursor-not-allowed w-full text-left active:scale-[0.98] cursor-pointer"
           >
             {Icon.plus}
             <span className="text-[13px]">New project</span>

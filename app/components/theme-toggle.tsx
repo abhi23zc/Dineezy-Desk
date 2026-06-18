@@ -13,14 +13,14 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <div className="w-[32px] h-[32px] rounded-[6px] border border-[#E4E4E7] dark:border-[#27272A]"></div>
+      <div className="w-[32px] h-[32px] rounded-[6px] border border-border-custom"></div>
     );
   }
 
   return (
     <button
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className="flex items-center justify-center w-[32px] h-[32px] rounded-[6px] bg-transparent text-[#09090B] dark:text-[#FAFAFA] border border-[#E4E4E7] dark:border-[#27272A] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors duration-100"
+      className="flex items-center justify-center w-[32px] h-[32px] rounded-[6px] bg-transparent text-foreground border border-border-custom hover:bg-bg-raised transition-all duration-150 active:scale-90 cursor-pointer"
       aria-label="Toggle theme"
     >
       {/* Sun icon */}
